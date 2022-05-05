@@ -141,7 +141,7 @@ void RayTracingManager::CreateCommitedBuffer(
 		bufferDesc.Flags = flags;
 	}
 
-	HRI(m_pDevice->CreateCommittedResource(
+	HR(m_pDevice->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&bufferDesc,
@@ -149,5 +149,5 @@ void RayTracingManager::CreateCommitedBuffer(
 		nullptr,
 		IID_PPV_ARGS(buffer.GetAddressOf()) //?
 	));
-	HRI(buffer->SetName(bufferName.c_str()));
+	HR(buffer->SetName(bufferName.c_str()));
 }
