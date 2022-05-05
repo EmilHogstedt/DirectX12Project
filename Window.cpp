@@ -128,7 +128,7 @@ void Window::CreateBackBufferRTVs()
 		m_pBackBuffers[i] = std::move(pBackBuffer);
 		std::wstring bufferName{ L"BackBuffer #" + std::to_wstring(i) };
 		HR(m_pBackBuffers[i]->SetName(bufferName.c_str()));
-		m_BackBufferRTVHeap.OffsetAddressPointerBy(1);
+		m_BackBufferRTVHeap.OffsetCPUAddressPointerBy(1);
 	}
 }
 

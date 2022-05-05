@@ -2,6 +2,19 @@
 #include "DescriptorHeap.h"
 #include "DXCore.h"
 
+DescriptorHeap::DescriptorHeap() noexcept
+	:m_Capacity{ 0u }, 
+	 m_Size{ 0u }, 
+	 m_HeapType{ }, 
+	 m_IsShaderVisible{ false },
+	 m_pDescriptorHeap{nullptr},
+	 m_IncrementSize{0u},
+	 m_CPUAdressStart{ 0u },
+	 m_CPUCurrentAdressOffset{ 0u },
+	 m_GPUAdressStart{ 0u }
+{
+}
+
 DescriptorHeap::DescriptorHeap(uint32_t capacity, D3D12_DESCRIPTOR_HEAP_TYPE heapType, bool shaderVisible) noexcept
 	: m_Capacity{ capacity }, m_Size{ 0u }, m_HeapType{ heapType }, m_IsShaderVisible{ shaderVisible }
 {
@@ -18,9 +31,11 @@ DescriptorHeap::DescriptorHeap(uint32_t capacity, D3D12_DESCRIPTOR_HEAP_TYPE hea
 	m_IncrementSize = DXCore::GetDevice()->GetDescriptorHandleIncrementSize(heapType);
 	m_CPUAdressStart = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	m_CPUCurrentAdressOffset = m_CPUAdressStart;
+	if (shaderVisible == true)
+		m_GPUAdressStart = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 }
 
-void DescriptorHeap::OffsetAddressPointerBy(uint32_t offset) noexcept
+void DescriptorHeap::OffsetCPUAddressPointerBy(uint32_t offset) noexcept
 {
 	DBG_ASSERT(!(m_Size + 1 > m_Capacity), "Descriptor Heap is full.");
 	m_CPUCurrentAdressOffset.ptr += (offset * m_IncrementSize);
