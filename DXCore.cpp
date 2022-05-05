@@ -3,9 +3,11 @@
 
 Microsoft::WRL::ComPtr<ID3D12Device5> DXCore::m_pDevice{ nullptr };
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> DXCore::m_pCommandQueue{ nullptr };
-Microsoft::WRL::ComPtr<ID3D12CommandAllocator> DXCore::m_pCommandAllocator{ nullptr };
+Microsoft::WRL::ComPtr<ID3D12CommandAllocator> DXCore::m_pCommandAllocators[NR_OF_FRAMES]{ nullptr };
 Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> DXCore::m_pCommandList{ nullptr };
 Microsoft::WRL::ComPtr<IDXGIAdapter> DXCore::m_pAdapter{ nullptr };
+Microsoft::WRL::ComPtr<ID3D12Fence1> DXCore::m_pFence{ nullptr };
+HANDLE DXCore::m_FenceEvent{ nullptr };
 
 void DXCore::Initialize() noexcept
 {
@@ -19,7 +21,8 @@ void DXCore::Initialize() noexcept
 	DXHelper::InitializeInfoQueue(m_pDevice);
 #endif
 	InitializeCommandInterfaces();
-
+	InitializeFence();
+	InitializeFenceEvent();
 }
 
 void DXCore::CreateDebugAndGPUValidationLayer() noexcept
@@ -55,14 +58,30 @@ void DXCore::InitializeCommandInterfaces() noexcept
 	HR(m_pDevice->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_pCommandQueue)));
 	HR(m_pCommandQueue->SetName(L"Main Command Queue"));
 
-	HR(m_pDevice->CreateCommandAllocator(commandQueueDesc.Type, IID_PPV_ARGS(&m_pCommandAllocator)));
-	HR(m_pCommandAllocator->SetName(L"Main Command Allocator"));
+	for (uint32_t i{ 0u }; i < NR_OF_FRAMES; ++i)
+	{
+		HR(m_pDevice->CreateCommandAllocator(commandQueueDesc.Type, IID_PPV_ARGS(&m_pCommandAllocators[i])));
+		std::wstring allocatorName{ L"Command Allocator #" + std::to_wstring(i) };
+		HR(m_pCommandAllocators[i]->SetName(allocatorName.c_str()));
+	}
 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pTempCommandList{ nullptr };
 
-	HR(m_pDevice->CreateCommandList(0u, commandQueueDesc.Type, m_pCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&pTempCommandList)));
+	HR(m_pDevice->CreateCommandList(0u, commandQueueDesc.Type, m_pCommandAllocators[0].Get(), nullptr, IID_PPV_ARGS(&pTempCommandList)));
 	HR(pTempCommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(m_pCommandList.GetAddressOf())));
 	HR(m_pCommandList->SetName(L"Main Command List"));
+}
+
+void DXCore::InitializeFence() noexcept
+{
+	HR(m_pDevice->CreateFence(0u, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFence)));
+	HR(m_pFence->SetName(L"Main Fence"));
+}
+
+void DXCore::InitializeFenceEvent() noexcept
+{
+	m_FenceEvent = ::CreateEventEx(NULL, nullptr, NULL, EVENT_ALL_ACCESS);
+	DBG_ASSERT(m_FenceEvent, "Failed to create Fence Event.");
 }
 
 Microsoft::WRL::ComPtr<IDXGIFactory6> DXCore::CreateFactory() noexcept

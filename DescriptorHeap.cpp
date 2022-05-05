@@ -33,6 +33,8 @@ DescriptorHeap::DescriptorHeap(uint32_t capacity, D3D12_DESCRIPTOR_HEAP_TYPE hea
 	m_CPUCurrentAdressOffset = m_CPUAdressStart;
 	if (shaderVisible == true)
 		m_GPUAdressStart = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	else
+		m_GPUAdressStart = {};
 }
 
 void DescriptorHeap::OffsetCPUAddressPointerBy(uint32_t offset) noexcept
