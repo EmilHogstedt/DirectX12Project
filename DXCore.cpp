@@ -16,7 +16,7 @@ void DXCore::Initialize() noexcept
 	InitializeDevice();
 
 #if defined(_DEBUG)
-	InitializeInfoQueue(m_pDevice);
+	DXHelper::InitializeInfoQueue(m_pDevice);
 #endif
 	//Can use HRI-Macro from now on
 	InitializeCommandInterfaces();
