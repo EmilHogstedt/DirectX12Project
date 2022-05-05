@@ -18,7 +18,6 @@ void DXCore::Initialize() noexcept
 #if defined(_DEBUG)
 	DXHelper::InitializeInfoQueue(m_pDevice);
 #endif
-	//Can use HRI-Macro from now on
 	InitializeCommandInterfaces();
 
 }
@@ -53,17 +52,17 @@ void DXCore::InitializeCommandInterfaces() noexcept
 	commandQueueDesc.NodeMask = 0;
 	commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
-	HRI(m_pDevice->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_pCommandQueue)));
-	HRI(m_pCommandQueue->SetName(L"Main Command Queue"));
+	HR(m_pDevice->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_pCommandQueue)));
+	HR(m_pCommandQueue->SetName(L"Main Command Queue"));
 
-	HRI(m_pDevice->CreateCommandAllocator(commandQueueDesc.Type, IID_PPV_ARGS(&m_pCommandAllocator)));
-	HRI(m_pCommandAllocator->SetName(L"Main Command Allocator"));
+	HR(m_pDevice->CreateCommandAllocator(commandQueueDesc.Type, IID_PPV_ARGS(&m_pCommandAllocator)));
+	HR(m_pCommandAllocator->SetName(L"Main Command Allocator"));
 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pTempCommandList{ nullptr };
 
-	HRI(m_pDevice->CreateCommandList(0u, commandQueueDesc.Type, m_pCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&pTempCommandList)));
-	HRI(pTempCommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(m_pCommandList.GetAddressOf())));
-	HRI(m_pCommandList->SetName(L"Main Command List"));
+	HR(m_pDevice->CreateCommandList(0u, commandQueueDesc.Type, m_pCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&pTempCommandList)));
+	HR(pTempCommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(m_pCommandList.GetAddressOf())));
+	HR(m_pCommandList->SetName(L"Main Command List"));
 }
 
 Microsoft::WRL::ComPtr<IDXGIFactory6> DXCore::CreateFactory() noexcept

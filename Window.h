@@ -1,4 +1,5 @@
 #pragma once
+#include "DescriptorHeap.h"
 class Window
 {
 public:
@@ -11,6 +12,7 @@ private:
 	~Window() noexcept = default;
 	void CreateWindow(const std::wstring& applicationName) noexcept;
 	void CreateSwapChain() noexcept;
+	void CreateBackBufferRTVs();
 private:
 	static Window s_Instance;
 	HWND m_WindowHandle;
@@ -19,4 +21,5 @@ private:
 	uint8_t m_NrOfFramesInFlight;
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> m_pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pBackBuffers[NR_OF_FRAMES];
+	DescriptorHeap m_BackBufferRTVHeap;
 };
