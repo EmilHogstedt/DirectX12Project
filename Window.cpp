@@ -153,3 +153,8 @@ void Window::OnUpdate() noexcept
 		::DispatchMessageA(&m_Message);
 	}
 }
+
+void Window::Present() noexcept
+{
+	HR(m_pSwapChain->Present(0u, 0u));
+}

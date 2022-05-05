@@ -7,6 +7,7 @@ public:
 	~DescriptorHeap() noexcept = default;
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE GetCPUStartHandle() noexcept { return m_CPUAdressStart; }
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentCPUOffsetHandle() noexcept { return m_CPUCurrentAdressOffset; }
+	[[nodiscard]] constexpr uint32_t GetDescriptorTypeSize() noexcept { return m_IncrementSize; }
 	void OffsetCPUAddressPointerBy(uint32_t offset) noexcept;
 private:
 	uint32_t m_Capacity;

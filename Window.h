@@ -6,7 +6,11 @@ public:
 	[[nodiscard]] static constexpr Window& Get() noexcept { return s_Instance; }
 	void Initialize(const std::wstring& applicationName, uint8_t framesInFlight = 3u) noexcept;
 	void OnUpdate() noexcept;
+	void Present() noexcept;
 	[[nodiscard]] constexpr bool IsRunning() noexcept { return m_IsRunning; }
+	[[nodiscard]] constexpr Microsoft::WRL::ComPtr<ID3D12Resource>* GetBackBuffers() noexcept { return m_pBackBuffers; }
+	[[nodiscard]] constexpr DescriptorHeap& GetBackBufferRTVHeap() noexcept { return m_BackBufferRTVHeap; }
+	[[nodiscard]] constexpr uint8_t GetCurrentBackbufferIndex() noexcept { return static_cast<uint8_t>(m_pSwapChain->GetCurrentBackBufferIndex()); }
 private:
 	Window() noexcept;
 	~Window() noexcept = default;
