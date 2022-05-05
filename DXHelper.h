@@ -34,6 +34,10 @@ class DXHelper;
 #ifndef HR
 	#define HR(function)	\
 	{	\
+		if (DXHelper::GetInfoQueue())	\
+		{	\
+			DXHelper::GetInfoQueue()->ClearStoredMessages();	\
+		}	\
 		HRESULT hr = (function);	\
 		if (FAILED(hr)){	\
 			std::cout << "DX12 has encountered a fatal error.\n";	\
@@ -42,6 +46,18 @@ class DXHelper;
 			std::cout << "Line:" << __LINE__ << "\n";	\
 			_com_error comError(hr);	\
 			std::wcout << comError.ErrorMessage();	\
+			if (DXHelper::GetInfoQueue())	\
+			{	\
+				std::cout << "DX12 error message: ";	\
+				for (uint32_t messageIndex{0u}; messageIndex < DXHelper::GetInfoQueue()->GetNumStoredMessages(); messageIndex++)	\
+				{	\
+					SIZE_T messageLength = 0;	\
+					DBG_ASSERT((DXHelper::GetInfoQueue()->GetMessage(0, NULL, &messageLength) == S_OK), "Failed to get info queue message");	\
+					std::unique_ptr<D3D12_MESSAGE> pMessage = std::unique_ptr<D3D12_MESSAGE>(DBG_NEW D3D12_MESSAGE[messageLength]);	\
+					DBG_ASSERT((DXHelper::GetInfoQueue()->GetMessage(0, pMessage.get(), &messageLength) == S_OK), "Failed to get info queue message");	\
+					std::cout << pMessage->pDescription << "\n";	\
+				}	\
+			}	\
 			__debugbreak();	\
 		}	\
 	}
@@ -49,41 +65,6 @@ class DXHelper;
 #else
 	#ifndef HR
 		#define HR(function) function
-	#endif
-#endif
-
-//Cannot be used before device is created.
-//Reason: Device creates the info queue, which is used here.
-#if defined(_DEBUG)
-#ifndef HRI
-	#define HRI(function)	\
-	{	\
-		DXHelper::GetInfoQueue()->ClearStoredMessages();	\
-		HRESULT hr2 = (function);	\
-		if (FAILED(hr2))	\
-		{	\
-			std::cout << "DX12 has encountered a fatal error.\n";	\
-			std::cout << "File: " << __FILE__ << "\n";	\
-			std::cout << "Function: " << __FUNCTION__ << "\n";	\
-			std::cout << "Line:" << __LINE__ << "\n";	\
-			_com_error comError2(hr2);	\
-			std::wcout << comError2.ErrorMessage();	\
-			std::cout << "DX12 error message: ";	\
-			for (uint32_t i{0u}; i < DXHelper::GetInfoQueue()->GetNumStoredMessages(); i++)	\
-			{	\
-				SIZE_T messageLength = 0;	\
-				HR(DXHelper::GetInfoQueue()->GetMessage(0, NULL, &messageLength));	\
-				std::unique_ptr<D3D12_MESSAGE> pMessage = std::unique_ptr<D3D12_MESSAGE>(DBG_NEW D3D12_MESSAGE[messageLength]);	\
-				HR(DXHelper::GetInfoQueue()->GetMessage(0, pMessage.get(), &messageLength));	\
-				std::cout << pMessage->pDescription << "\n";	\
-			}	\
-			__debugbreak();	\
-		}	\
-	}
-#endif
-#else
-	#ifndef HRI
-		#define HRI(function) function
 	#endif
 #endif
 
@@ -101,12 +82,12 @@ class DXHelper;
 			std::cout << "Function: " << __FUNCTION__ << "\n";	\
 			std::cout << "Line:" << __LINE__ << "\n";	\
 			std::cout << "DX12 error message: ";	\
-			for (uint32_t i{ 0u }; i < DXHelper::GetInfoQueue()->GetNumStoredMessages(); i++)	\
+			for (uint32_t messageIndex{ 0u }; messageIndex < DXHelper::GetInfoQueue()->GetNumStoredMessages(); messageIndex++)	\
 			{	\
 				SIZE_T messageLength = 0;	\
-				HR(DXHelper::GetInfoQueue()->GetMessage(0, NULL, &messageLength));	\
+				DBG_ASSERT((DXHelper::GetInfoQueue()->GetMessage(0, NULL, &messageLength) == S_OK), "Failed to get info queue message.");	\
 				std::unique_ptr<D3D12_MESSAGE> pMessage = std::unique_ptr<D3D12_MESSAGE>(DBG_NEW D3D12_MESSAGE[messageLength]);	\
-				HR(iDXHelper::GetInfoQueue()->GetMessage(0, pMessage.get(), &messageLength));	\
+				DBG_ASSERT((DXHelper::GetInfoQueue()->GetMessage(0, pMessage.get(), &messageLength) == S_OK), "Failed to get info queue message.");	\
 				std::cout << pMessage->pDescription << "\n";	\
 			}	\
 			__debugbreak();	\
@@ -131,7 +112,7 @@ public:
 	{
 		DBG_ASSERT(pDevice, "Device is not initalized.");
 		DBG_ASSERT(!s_pInfoQueue, "Info queue is already initialized.");
-		HR(pDevice->QueryInterface(IID_PPV_ARGS(&s_pInfoQueue)));
+		pDevice->QueryInterface(IID_PPV_ARGS(&s_pInfoQueue));
 	}
 private:
 	static Microsoft::WRL::ComPtr<ID3D12InfoQueue> s_pInfoQueue;

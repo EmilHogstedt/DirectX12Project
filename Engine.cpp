@@ -10,6 +10,7 @@ void Engine::Initialize(const std::wstring& applicationName) noexcept
 #endif
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
+	m_pRenderer = std::make_unique<Renderer>();
 }
 
 void Engine::Run() noexcept
@@ -17,9 +18,13 @@ void Engine::Run() noexcept
 	static Window& s_Window{ Window::Get() };
 	while (s_Window.IsRunning())
 	{
+		//Rendering: We *COULD* have a scene that sets everything up and just feeds to Submit-function...
+		m_pRenderer->Begin();
+		m_pRenderer->Submit(/*Objects...*/);
+		m_pRenderer->End();
+
 		s_Window.OnUpdate();
 	}
-
 }
 
 #if defined(_DEBUG)

@@ -104,7 +104,7 @@ void Window::CreateSwapChain() noexcept
 	swapChainDescriptor.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	swapChainDescriptor.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
-	HRI(pFactory->CreateSwapChainForHwnd
+	HR(pFactory->CreateSwapChainForHwnd
 	(
 		pCommandQueue.Get(), 
 		m_WindowHandle, 
@@ -113,7 +113,23 @@ void Window::CreateSwapChain() noexcept
 		nullptr, 
 		&pTempSwapChain
 	));
-	HRI(pTempSwapChain->QueryInterface(__uuidof(IDXGISwapChain4), reinterpret_cast<void**>(m_pSwapChain.GetAddressOf())));
+	HR(pTempSwapChain->QueryInterface(__uuidof(IDXGISwapChain4), reinterpret_cast<void**>(m_pSwapChain.GetAddressOf())));
+}
+
+void Window::CreateBackBufferRTVs()
+{
+	for (uint32_t i{ 0u }; i < NR_OF_FRAMES; ++i)
+	{
+		auto cpuHandle{ m_BackBufferRTVHeap.GetCurrentCPUOffsetHandle() };
+		Microsoft::WRL::ComPtr<ID3D12Resource> pBackBuffer{ nullptr };
+		HR(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer)));
+
+		STDCALL(DXCore::GetDevice()->CreateRenderTargetView(pBackBuffer.Get(), nullptr, cpuHandle));
+		m_pBackBuffers[i] = std::move(pBackBuffer);
+		std::wstring bufferName{ L"BackBuffer #" + std::to_wstring(i) };
+		HR(m_pBackBuffers[i]->SetName(bufferName.c_str()));
+		m_BackBufferRTVHeap.OffsetAddressPointerBy(1);
+	}
 }
 
 void Window::Initialize(const std::wstring& applicationName, uint8_t framesInFlight) noexcept
@@ -121,7 +137,9 @@ void Window::Initialize(const std::wstring& applicationName, uint8_t framesInFli
 	s_Instance = *this;
 	m_NrOfFramesInFlight = framesInFlight;
 	CreateWindow(applicationName);
+	m_BackBufferRTVHeap = *new(&m_BackBufferRTVHeap)DescriptorHeap(NR_OF_FRAMES, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
 	CreateSwapChain();
+	CreateBackBufferRTVs();
 }
 
 void Window::OnUpdate() noexcept

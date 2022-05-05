@@ -1,4 +1,5 @@
 #pragma once
+#include "Renderer.h"
 class Engine
 {
 public:
@@ -12,4 +13,5 @@ private:
 #endif
 private:
 	std::wstring m_AppName;
+	std::unique_ptr<Renderer> m_pRenderer;
 };
