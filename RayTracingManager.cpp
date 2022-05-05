@@ -10,10 +10,11 @@ void RayTracingManager::Initialize(
 	m_pDevice = pDevice;
 	m_pCommandList = pCommandList;
 
-	//Reset command memory
-	//Transition the vertexbuffer resource to non pixel shader resource.
+	//Make sure to reset command memory before this. Vertex buffer needs to have a GPU address.
+	//Transition the vertexbuffer resource to non pixel shader resource before this aswell.
 
-	//Create the bottom level acceleration structure.
+	//Create the bottom level acceleration structure, send in the vertex data which consists of the local vertex data for all different models used.
+	//Only one instance of each model in this vertex buffer.
 	BuildBottomAcceleration(pVertexBuffer->GetGPUVirtualAddress());
 
 	//Make sure we are finished building the bottom level acceleration structure before using it.
@@ -22,7 +23,18 @@ void RayTracingManager::Initialize(
 	uavBarrier.UAV.pResource = m_pResultBufferBottom.Get();
 	STDCALL(m_pCommandList->ResourceBarrier(1, &uavBarrier));
 
+	BuildTopAcceleration();
 
+	uavBarrier.UAV.pResource = m_pResultBufferTop.Get();
+	STDCALL(m_pCommandList->ResourceBarrier(1, &uavBarrier));
+}
+
+void RayTracingManager::Refit() noexcept
+{
+}
+
+void RayTracingManager::Rebuild() noexcept
+{
 }
 
 void RayTracingManager::BuildBottomAcceleration(D3D12_GPU_VIRTUAL_ADDRESS vBufferFirstPos) noexcept
@@ -44,7 +56,7 @@ void RayTracingManager::BuildBottomAcceleration(D3D12_GPU_VIRTUAL_ADDRESS vBuffe
 		//Add 1 geometryDesc element per other arbritary geometry.
 	}
 
-	//Create the bottom level acceleration structure based on the created geometries.
+	//Create the bottom level acceleration structure input desc based on the created geometries.
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS bottomInputs = {};
 	{
 		bottomInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
@@ -54,44 +66,25 @@ void RayTracingManager::BuildBottomAcceleration(D3D12_GPU_VIRTUAL_ADDRESS vBuffe
 		bottomInputs.pGeometryDescs = geometryDescs;
 	}
 
-	//Get prebuild info
+	//Get prebuild info that is used for creating the acceleration structure.
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
 	STDCALL(m_pDevice->GetRaytracingAccelerationStructurePrebuildInfo(&bottomInputs, &prebuildInfo));
 
-	//Create the result buffer.
-	CreateCommitedBuffer(
+	//Create the buffers and acceleration structure.
+	BuildStructure(
 		L"Bottom Level Acceleration Structure - ResultBuffer",
 		m_pResultBufferBottom,
-		D3D12_HEAP_TYPE_DEFAULT,
 		prebuildInfo.ResultDataMaxSizeInBytes,
-		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
-	);
-	
-	//Create the scratch buffer.
-	CreateCommitedBuffer(
 		L"Bottom Level Acceleration Structure - ScratchBuffer",
 		m_pScratchBufferBottom,
-		D3D12_HEAP_TYPE_DEFAULT,
 		prebuildInfo.ScratchDataSizeInBytes,
-		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+		bottomInputs
 	);
-
-	//Finally create the acceleration structure.
-	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC accelerationDesc = {};
-	{
-		accelerationDesc.DestAccelerationStructureData = m_pResultBufferBottom->GetGPUVirtualAddress();
-		accelerationDesc.Inputs = bottomInputs;
-		accelerationDesc.SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
-		accelerationDesc.ScratchAccelerationStructureData = m_pScratchBufferBottom->GetGPUVirtualAddress();
-	}
-	
-	STDCALL(m_pCommandList->BuildRaytracingAccelerationStructure(&accelerationDesc, 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
 }
 
 void RayTracingManager::BuildTopAcceleration() noexcept
 {
+	//Create the top level instance buffer resource.
 	CreateCommitedBuffer(
 		L"Top Level Acceleration Structure - InstanceBuffer",
 		m_pInstanceBufferTop,
@@ -101,6 +94,7 @@ void RayTracingManager::BuildTopAcceleration() noexcept
 		D3D12_RESOURCE_STATE_GENERIC_READ
 	);
 
+	//Define the desc for the top level isntance buffer resource.
 	D3D12_RAYTRACING_INSTANCE_DESC instancingDesc = {};
 	{
 		instancingDesc.Transform[0][0] = instancingDesc.Transform[1][1] = instancingDesc.Transform[2][2] = 1;
@@ -111,7 +105,79 @@ void RayTracingManager::BuildTopAcceleration() noexcept
 		instancingDesc.AccelerationStructure = m_pResultBufferBottom->GetGPUVirtualAddress();
 	}
 	
+	//Copy the desc to the created buffer resource.
+	D3D12_RANGE zero = { 0, 0 };
+	unsigned char* mappedPtr = nullptr;
+	HR(m_pInstanceBufferTop->Map(0, &zero, reinterpret_cast<void**>(&mappedPtr)));
+	std::memcpy(mappedPtr, &instancingDesc, sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
+	STDCALL(m_pInstanceBufferTop->Unmap(0, nullptr));
 
+	//Create the top level acceleration structure description.
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS topInputs = {};
+	{
+		topInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+		topInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE; //Maybe change this to faster build and make it a member variable.
+		topInputs.NumDescs = 1;
+		topInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+		topInputs.InstanceDescs = m_pInstanceBufferTop->GetGPUVirtualAddress();
+	}
+
+	//Get prebuild info that is used for creating the acceleration structure.
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
+	m_pDevice->GetRaytracingAccelerationStructurePrebuildInfo(&topInputs, &prebuildInfo);
+
+	//Create the buffers and acceleration structure.
+	BuildStructure(
+		L"Top Level Acceleration Structure - ResultBuffer",
+		m_pResultBufferTop,
+		prebuildInfo.ResultDataMaxSizeInBytes,
+		L"Top Level Acceleration Structure - ScratchBuffer",
+		m_pScratchBufferTop,
+		prebuildInfo.ScratchDataSizeInBytes,
+		topInputs
+	);
+}
+
+void RayTracingManager::BuildStructure(
+	std::wstring resultName,
+	Microsoft::WRL::ComPtr<ID3D12Resource> resultBuffer,
+	uint64_t resultSize,
+	std::wstring scratchName,
+	Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer,
+	uint64_t scratchSize,
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs
+	) noexcept
+{
+	//Create the result buffer.
+	CreateCommitedBuffer(
+		resultName,
+		resultBuffer,
+		D3D12_HEAP_TYPE_DEFAULT,
+		resultSize,
+		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+		D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
+	);
+
+	//Create the scratch buffer.
+	CreateCommitedBuffer(
+		scratchName,
+		scratchBuffer,
+		D3D12_HEAP_TYPE_DEFAULT,
+		scratchSize,
+		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+	);
+
+	//Finally create the acceleration structure.
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC accelerationDesc = {};
+	{
+		accelerationDesc.DestAccelerationStructureData = resultBuffer->GetGPUVirtualAddress();
+		accelerationDesc.Inputs = inputs;
+		accelerationDesc.SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
+		accelerationDesc.ScratchAccelerationStructureData = scratchBuffer->GetGPUVirtualAddress();
+	}
+
+	STDCALL(m_pCommandList->BuildRaytracingAccelerationStructure(&accelerationDesc, 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
 }
 
 void RayTracingManager::CreateCommitedBuffer(

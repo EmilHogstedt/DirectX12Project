@@ -13,11 +13,22 @@ public:
 		Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer
 	) noexcept;
 
+	void Refit() noexcept;
+	void Rebuild() noexcept;
+
 private:
 	void BuildBottomAcceleration(D3D12_GPU_VIRTUAL_ADDRESS vBufferFirstPos) noexcept;
-
 	void BuildTopAcceleration() noexcept;
 
+	void BuildStructure(
+		std::wstring resultName,
+		Microsoft::WRL::ComPtr<ID3D12Resource> resultBuffer,
+		uint64_t resultSize,
+		std::wstring scratchName,
+		Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer,
+		uint64_t scratchSize,
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs
+	) noexcept;
 	void CreateCommitedBuffer(
 		std::wstring bufferName,
 		Microsoft::WRL::ComPtr<ID3D12Resource> buffer,
