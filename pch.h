@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <unordered_map>
 #include <stdint.h>
 #include <crtdbg.h>
 #include <assert.h>
