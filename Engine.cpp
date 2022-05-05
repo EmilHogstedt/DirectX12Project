@@ -11,6 +11,7 @@ void Engine::Initialize(const std::wstring& applicationName) noexcept
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
 	m_pRenderer = std::make_unique<Renderer>();
+	m_pRenderer->Initialize();
 }
 
 void Engine::Run() noexcept
@@ -25,6 +26,7 @@ void Engine::Run() noexcept
 
 		s_Window.OnUpdate();
 	}
+	m_pRenderer->OnShutDown();
 }
 
 #if defined(_DEBUG)
