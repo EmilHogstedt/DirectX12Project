@@ -17,9 +17,14 @@ void RenderCommand::TransitionResource(const Microsoft::WRL::ComPtr<ID3D12Resour
 	STDCALL(DXCore::GetCommandList()->ResourceBarrier(1u, &resourceTransitionBarrier));
 }
 
-void RenderCommand::ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorhandle, FLOAT* clearColor) noexcept
+void RenderCommand::ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorhandle, const DirectX::XMVECTORF32& clearColor) noexcept
 {
 	STDCALL(DXCore::GetCommandList()->ClearRenderTargetView(cpuDescriptorhandle, clearColor, 0u, nullptr));
+}
+
+void RenderCommand::ClearDepth(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorhandle, FLOAT depthValue) noexcept
+{
+	STDCALL(DXCore::GetCommandList()->ClearDepthStencilView(cpuDescriptorhandle, D3D12_CLEAR_FLAG_DEPTH, depthValue, 0u, 0u, nullptr));
 }
 
 uint64_t RenderCommand::SignalFenceFromGPU() noexcept

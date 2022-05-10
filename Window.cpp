@@ -82,6 +82,10 @@ void Window::CreateWindow(const std::wstring& applicationName) noexcept
 		nullptr
 	);
 	DBG_ASSERT(m_WindowHandle, "Failed to create render window.");
+
+	m_Width = windowWidth;
+	m_Height = windowHeight;
+
 	::ShowWindow(m_WindowHandle, SW_SHOWNORMAL);
 }
 

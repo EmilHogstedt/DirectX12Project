@@ -19,7 +19,6 @@ void Engine::Run() noexcept
 	static Window& s_Window{ Window::Get() };
 	while (s_Window.IsRunning())
 	{
-		//Rendering: We *COULD* have a scene that sets everything up and just feeds to Submit-function...
 		m_pRenderer->Begin();
 		m_pRenderer->Submit(/*Objects...*/);
 		m_pRenderer->End();

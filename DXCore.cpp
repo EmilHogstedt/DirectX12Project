@@ -1,13 +1,15 @@
 #include "pch.h"
 #include "DXCore.h"
 
-Microsoft::WRL::ComPtr<ID3D12Device5> DXCore::m_pDevice{ nullptr };
+Microsoft::WRL::ComPtr<ID3D12Device8> DXCore::m_pDevice{ nullptr };
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> DXCore::m_pCommandQueue{ nullptr };
 Microsoft::WRL::ComPtr<ID3D12CommandAllocator> DXCore::m_pCommandAllocators[NR_OF_FRAMES]{ nullptr };
 Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> DXCore::m_pCommandList{ nullptr };
 Microsoft::WRL::ComPtr<IDXGIAdapter> DXCore::m_pAdapter{ nullptr };
 Microsoft::WRL::ComPtr<ID3D12Fence1> DXCore::m_pFence{ nullptr };
 HANDLE DXCore::m_FenceEvent{ nullptr };
+Microsoft::WRL::ComPtr<ID3D12Heap> DXCore::m_pUploadHeap{ nullptr };
+Microsoft::WRL::ComPtr<ID3D12Resource> DXCore::m_pUploadBuffer{ nullptr };
 
 void DXCore::Initialize() noexcept
 {
@@ -23,6 +25,7 @@ void DXCore::Initialize() noexcept
 	InitializeCommandInterfaces();
 	InitializeFence();
 	InitializeFenceEvent();
+	CreateUploadHeapAndBuffer(100'000'000);
 }
 
 void DXCore::CreateDebugAndGPUValidationLayer() noexcept
@@ -43,7 +46,7 @@ void DXCore::InitializeDevice() noexcept
 
 	CheckSupportForDXR(pTempDevice);
 
-	HR(pTempDevice->QueryInterface(__uuidof(ID3D12Device5), reinterpret_cast<void**>(m_pDevice.GetAddressOf())));
+	HR(pTempDevice->QueryInterface(__uuidof(ID3D12Device8), reinterpret_cast<void**>(m_pDevice.GetAddressOf())));
 	HR(m_pDevice->SetName(L"Main Device"));
 }
 
@@ -127,4 +130,53 @@ void DXCore::CheckSupportForDXR(Microsoft::WRL::ComPtr<ID3D12Device> pDevice) no
 	HR(pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureData, sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS5)));
 	//Change to 1.1 to enable inline Ray tracing: 
 	DBG_ASSERT(featureData.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0, "Ray Tracing 1.1 is not supported on current device");
+}
+
+void DXCore::CreateUploadHeapAndBuffer(uint32_t bufferSize) noexcept
+{
+	D3D12_HEAP_PROPERTIES uploadHeapProperties = {};
+	{
+		uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+		uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+		uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+		uploadHeapProperties.CreationNodeMask = 0u;
+		uploadHeapProperties.VisibleNodeMask = 0u;
+	}
+
+	D3D12_HEAP_DESC uploadHeapDescriptor = {};
+	{
+		uploadHeapDescriptor.SizeInBytes = bufferSize;
+		uploadHeapDescriptor.Properties = uploadHeapProperties;
+		uploadHeapDescriptor.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		uploadHeapDescriptor.Flags = D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
+	}
+
+	HR(m_pDevice->CreateHeap(&uploadHeapDescriptor, IID_PPV_ARGS(&m_pUploadHeap)));
+	HR(m_pUploadHeap->SetName(L"Main Upload Heap"));
+
+	D3D12_RESOURCE_DESC uploadBufferDescriptor = {};
+	{
+		uploadBufferDescriptor.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		uploadBufferDescriptor.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		uploadBufferDescriptor.Width = bufferSize;
+		uploadBufferDescriptor.Height = 1u;
+		uploadBufferDescriptor.DepthOrArraySize = 1u;
+		uploadBufferDescriptor.MipLevels = 1u;
+		uploadBufferDescriptor.Format = DXGI_FORMAT_UNKNOWN;
+		uploadBufferDescriptor.SampleDesc.Count = 1u;
+		uploadBufferDescriptor.SampleDesc.Quality = 0u;
+		uploadBufferDescriptor.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		uploadBufferDescriptor.Flags = D3D12_RESOURCE_FLAG_NONE;
+	}
+
+	HR(m_pDevice->CreatePlacedResource
+	(
+		m_pUploadHeap.Get(),
+		0u,
+		&uploadBufferDescriptor,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&m_pUploadBuffer))
+	);
+	HR(m_pUploadBuffer->SetName(L"Main Upload Buffer"));
 }

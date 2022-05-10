@@ -99,6 +99,103 @@ class DXHelper;
 		#define STDCALL(function) function
 	#endif
 #endif
+
+#if defined(_DEBUG) || defined(DEBUG)
+#ifndef SERIALIZE_ROOT_SIGNATURE
+#define SERIALIZE_ROOT_SIGNATURE(rootSignatureDescriptor, pRootSignatureBlob)	\
+		{	\
+			Microsoft::WRL::ComPtr<ID3DBlob> pErrorBlob = nullptr;	\
+			DXHelper::GetInfoQueue()->ClearStoredMessages();	\
+			HRESULT hr3 = D3D12SerializeRootSignature(&rootSignatureDescriptor, D3D_ROOT_SIGNATURE_VERSION_1_0, &pRootSignatureBlob, &pErrorBlob);	\
+			if (FAILED(hr3))	\
+			{	\
+				std::cout << "ERROR: DX12 has encountered a critical error:" << "\n";	\
+				std::cout << "File: " << __FILE__ << "\n";	\
+				std::cout << "Function: " << __FUNCTION__ << "\n";	\
+				std::cout << "Line: " << __LINE__ << "\n";	\
+				_com_error comError2(hr3);	\
+				std::wcout << comError2.ErrorMessage();	\
+				if (pErrorBlob)	\
+					std::cout << "Error blob message: " << pErrorBlob->GetBufferPointer() << "\n";	\
+				if (DXHelper::GetInfoQueue()->GetNumStoredMessages() > 0)	\
+					std::cout << "D3D12 error message: ";	\
+				for (uint32_t i{0u}; i < DXHelper::GetInfoQueue()->GetNumStoredMessages(); i++)	\
+				{	\
+					size_t messageLength2{0u};	\
+					HR(DXHelper::GetInfoQueue()->GetMessage(i, nullptr, &messageLength2));	\
+					std::unique_ptr<D3D12_MESSAGE> pMessage2 = std::unique_ptr<D3D12_MESSAGE>(DBG_NEW D3D12_MESSAGE[messageLength2]);	\
+					HR(DXHelper::GetInfoQueue()->GetMessage(i, pMessage2.get(), &messageLength2));	\
+					std::cout <<  pMessage2->pDescription << "\n";	\
+				}	\
+				__debugbreak();	\
+			}	\
+		}
+#endif
+#else
+#ifndef SERIALIZE_ROOT_SIGNATURE
+#define SERIALIZE_ROOT_SIGNATURE(rootSignatureDescriptor, pRootSignatureBlob)	\
+			{	\
+				D3D12SerializeRootSignature(&rootSignatureDescriptor, D3D_ROOT_SIGNATURE_VERSION_1_0, &pRootSignatureBlob, &pErrorBlob);	\
+			}
+#endif
+#endif
+
+#if defined(_DEBUG) || defined(DEBUG)
+#ifndef COMPILE_FROM_FILE
+#define COMPILE_FROM_FILE(fileName, entryPoint, shaderVersion, shaderBlob)	\
+		{	\
+			Microsoft::WRL::ComPtr<ID3DBlob> pErrorBlob2 = nullptr;	\
+			DXHelper::GetInfoQueue()->ClearStoredMessages();	\
+			HRESULT hr4 = D3DCompileFromFile(fileName, \
+											 nullptr, \
+											 D3D_COMPILE_STANDARD_FILE_INCLUDE, \
+											 entryPoint, \
+											 shaderVersion,	\
+											 D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, \
+											 0u, \
+											 &shaderBlob, \
+											 &pErrorBlob2);	\
+			if (FAILED(hr4))	\
+			{	\
+				std::cout << "ERROR: DX12 has encountered a critical error:" << "\n";	\
+				std::cout << "File: " << __FILE__ << "\n";	\
+				std::cout << "Function: " << __FUNCTION__ << "\n";	\
+				std::cout << "Line: " << __LINE__ << "\n";	\
+				_com_error comError3(hr4);	\
+				std::wcout << comError3.ErrorMessage();	\
+				if (pErrorBlob2)	\
+					std::cout << "Error blob message: " << pErrorBlob2->GetBufferPointer() << "\n";	\
+				if (DXHelper::GetInfoQueue()->GetNumStoredMessages() > 0)	\
+					std::cout << "D3D12 error message: ";	\
+				for (uint32_t i{ 0u }; i < DXHelper::GetInfoQueue()->GetNumStoredMessages(); i++)	\
+				{	\
+					size_t messageLength3{ 0u };	\
+					HR(DXHelper::GetInfoQueue()->GetMessage(i, nullptr, &messageLength3));	\
+					std::unique_ptr<D3D12_MESSAGE> pMessage3 = std::unique_ptr<D3D12_MESSAGE>(DBG_NEW D3D12_MESSAGE[messageLength3]);	\
+					HR(DXHelper::GetInfoQueue()->GetMessage(i, pMessage3.get(), &messageLength3));	\
+					std::cout << pMessage3->pDescription << "\n";	\
+				}	\
+					__debugbreak();	\
+			}	\
+		}
+#endif
+#else
+#ifndef COMPILE_FROM_FILE
+#define COMPILE_FROM_FILE(fileName, entryPoint, shaderVersion, shaderBlob)	\ 
+		{	\
+			D3DCompileFromFile(fileName, \
+				nullptr, \
+				D3D_COMPILE_STANDARD_FILE_INCLUDE, \
+				entryPoint, \
+				shaderVersion,
+				0u, \
+				0u, \
+				& shaderBlob, \
+				nullptr);	\
+		}
+#endif
+#endif
+
 #pragma endregion
 
 #if defined(_DEBUG)
