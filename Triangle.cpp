@@ -4,7 +4,7 @@
 #include "Vertex.h"
 
 Triangle::Triangle() noexcept
-	: m_NrOfIndices{3u}
+	: m_NrOfIndices{3u}, m_NrOfVertices{3u}
 {
 	Microsoft::WRL::ComPtr<ID3D12Heap> pVBHeap{nullptr};
 	Microsoft::WRL::ComPtr<ID3D12Heap> pIBHeap{ nullptr };

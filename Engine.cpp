@@ -10,6 +10,9 @@ void Engine::Initialize(const std::wstring& applicationName) noexcept
 #endif
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
+
+	m_pScene = std::make_unique<Scene>();
+	m_pScene->Initialize();
 	m_pRenderer = std::make_unique<Renderer>();
 	m_pRenderer->Initialize();
 }

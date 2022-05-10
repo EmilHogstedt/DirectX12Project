@@ -4,7 +4,8 @@
 void RayTracingManager::Initialize(
 	Microsoft::WRL::ComPtr<ID3D12Device5> pDevice,
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> pCommandList,
-	std::vector<std::unique_ptr<ModelInfo>> models,
+	const std::unordered_map<std::wstring, std::shared_ptr<Model>>& models,
+	const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& objects,
 	uint32_t totalNrObjects
 ) noexcept
 {
@@ -27,7 +28,7 @@ void RayTracingManager::Initialize(
 		STDCALL(m_pCommandList->ResourceBarrier(1, &uavBarrier));
 	}
 	
-	BuildTopAcceleration(models, totalNrObjects);
+	BuildTopAcceleration(models, objects, totalNrObjects);
 
 	uavBarrier.UAV.pResource = m_pResultBufferTop.Get();
 	STDCALL(m_pCommandList->ResourceBarrier(1, &uavBarrier));
@@ -42,7 +43,7 @@ void RayTracingManager::Rebuild() noexcept
 }
 
 void RayTracingManager::BuildBottomAcceleration(
-	const std::vector<std::unique_ptr<ModelInfo>>& models
+	const std::unordered_map<std::wstring, std::shared_ptr<Model>>& models
 ) noexcept
 {
 	
@@ -53,8 +54,8 @@ void RayTracingManager::BuildBottomAcceleration(
 		geometryDescs[0].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 		geometryDescs[0].Triangles.Transform3x4 = NULL;
 		geometryDescs[0].Triangles.IndexFormat = DXGI_FORMAT_UNKNOWN; //Maybe change later?
-		geometryDescs[0].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		geometryDescs[0].Triangles.VertexBuffer.StrideInBytes = sizeof(Vertex);
+		geometryDescs[0].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+		geometryDescs[0].Triangles.VertexBuffer.StrideInBytes = /*sizeof(Vertex)*/ sizeof(float) * 3;
 	}
 
 	//Create the bottom level acceleration structure input desc.
@@ -68,13 +69,13 @@ void RayTracingManager::BuildBottomAcceleration(
 	
 	//Go through each unique model and create a result- & scratchbuffer for each.
 	//This is so that they later
-	for (uint32_t i{0u}; i < models.size(); i++)
+	for (auto model : models)
 	{
-		std::wstring currentModelName = models[i]->m_model->GetName();
-		geometryDescs[0].Triangles.IndexCount = models[i]->m_model->GetIndexCount();
-		geometryDescs[0].Triangles.VertexCount = models[i]->m_model->GetIndexCount();
-		geometryDescs[0].Triangles.IndexBuffer = models[i]->m_model->GetIndexBufferGPUAddress();
-		geometryDescs[0].Triangles.VertexBuffer.StartAddress = models[i]->m_model->GetVertexBufferGPUAddress();
+		std::wstring currentModelName = model.second->GetName();
+		geometryDescs[0].Triangles.IndexCount = model.second->GetIndexCount();
+		geometryDescs[0].Triangles.VertexCount = model.second->GetVertexCount();
+		geometryDescs[0].Triangles.IndexBuffer = model.second->GetIndexBufferGPUAddress();
+		geometryDescs[0].Triangles.VertexBuffer.StartAddress = model.second->GetVertexBufferGPUAddress();
 		
 		bottomInputs.pGeometryDescs = geometryDescs;
 
@@ -124,7 +125,8 @@ void RayTracingManager::BuildBottomAcceleration(
 }
 
 void RayTracingManager::BuildTopAcceleration(
-	const std::vector<std::unique_ptr<ModelInfo>>& models,
+	const std::unordered_map<std::wstring, std::shared_ptr<Model>>& models,
+	const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& objects,
 	uint32_t totalNrObjects
 ) noexcept
 {
@@ -141,13 +143,30 @@ void RayTracingManager::BuildTopAcceleration(
 	//Define the desc for the top level instance buffer resource.
 	uint32_t index = 0u;
 	std::unique_ptr<D3D12_RAYTRACING_INSTANCE_DESC[]> instancingDesc(DBG_NEW D3D12_RAYTRACING_INSTANCE_DESC[totalNrObjects]);
-	for (uint32_t i{0u}; i < models.size(); i++)
+	for (auto model : models)
 	{
-		std::wstring currentModelName = models[i]->m_model->GetName();
-		for (uint32_t j{0u}; j < models[i]->m_transforms.size(); j++)
+		std::wstring currentModelName = model.first;
+		std::vector<std::shared_ptr<VertexObject>> currentVector = objects.at(currentModelName);
+		for (auto object : currentVector)
 		{
+			DirectX::XMFLOAT4X4 objectTransform = object->GetTransform();
 			//Change the transform to use the object's transform
-			instancingDesc[index].Transform[0][0] = instancingDesc[index].Transform[1][1] = instancingDesc[index].Transform[2][2] = 1;
+			//First row.
+			instancingDesc[index].Transform[0][0] = objectTransform._11;
+			instancingDesc[index].Transform[0][1] = objectTransform._12;
+			instancingDesc[index].Transform[0][2] = objectTransform._13;
+			instancingDesc[index].Transform[0][3] = objectTransform._14;
+			//Second row.
+			instancingDesc[index].Transform[1][0] = objectTransform._21;
+			instancingDesc[index].Transform[1][1] = objectTransform._22;
+			instancingDesc[index].Transform[1][2] = objectTransform._23;
+			instancingDesc[index].Transform[1][3] = objectTransform._24;
+			//Third row.
+			instancingDesc[index].Transform[2][0] = objectTransform._31;
+			instancingDesc[index].Transform[2][1] = objectTransform._32;
+			instancingDesc[index].Transform[2][2] = objectTransform._33;
+			instancingDesc[index].Transform[2][3] = objectTransform._34;
+
 			instancingDesc[index].InstanceID = index;
 			instancingDesc[index].InstanceMask = 0xFF;
 			instancingDesc[index].InstanceContributionToHitGroupIndex = 0;
@@ -192,10 +211,10 @@ void RayTracingManager::BuildTopAcceleration(
 
 void RayTracingManager::BuildStructure(
 	std::wstring resultName,
-	Microsoft::WRL::ComPtr<ID3D12Resource> resultBuffer,
+	Microsoft::WRL::ComPtr<ID3D12Resource>& resultBuffer,
 	uint64_t resultSize,
 	std::wstring scratchName,
-	Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer,
+	Microsoft::WRL::ComPtr<ID3D12Resource>& scratchBuffer,
 	uint64_t scratchSize,
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs
 	) noexcept
@@ -234,7 +253,7 @@ void RayTracingManager::BuildStructure(
 
 void RayTracingManager::CreateCommitedBuffer(
 	std::wstring bufferName,
-	Microsoft::WRL::ComPtr<ID3D12Resource> buffer,
+	Microsoft::WRL::ComPtr<ID3D12Resource>& buffer,
 	D3D12_HEAP_TYPE heapType,
 	uint64_t bufferSize,
 	D3D12_RESOURCE_FLAGS flags,
@@ -265,7 +284,7 @@ void RayTracingManager::CreateCommitedBuffer(
 		&bufferDesc,
 		initialState,
 		nullptr,
-		IID_PPV_ARGS(buffer.GetAddressOf()) //?
+		IID_PPV_ARGS(&buffer) //?
 	));
 	HR(buffer->SetName(bufferName.c_str()));
 }

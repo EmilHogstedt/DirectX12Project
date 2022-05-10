@@ -135,7 +135,7 @@ class DXHelper;
 #ifndef SERIALIZE_ROOT_SIGNATURE
 #define SERIALIZE_ROOT_SIGNATURE(rootSignatureDescriptor, pRootSignatureBlob)	\
 			{	\
-				D3D12SerializeRootSignature(&rootSignatureDescriptor, D3D_ROOT_SIGNATURE_VERSION_1_0, &pRootSignatureBlob, &pErrorBlob);	\
+				D3D12SerializeRootSignature(&rootSignatureDescriptor, D3D_ROOT_SIGNATURE_VERSION_1_0, &pRootSignatureBlob, nullptr);	\
 			}
 #endif
 #endif
@@ -181,13 +181,13 @@ class DXHelper;
 #endif
 #else
 #ifndef COMPILE_FROM_FILE
-#define COMPILE_FROM_FILE(fileName, entryPoint, shaderVersion, shaderBlob)	\ 
+#define COMPILE_FROM_FILE(fileName, entryPoint, shaderVersion, shaderBlob)	\
 		{	\
 			D3DCompileFromFile(fileName, \
 				nullptr, \
 				D3D_COMPILE_STANDARD_FILE_INCLUDE, \
 				entryPoint, \
-				shaderVersion,
+				shaderVersion, \
 				0u, \
 				0u, \
 				& shaderBlob, \
