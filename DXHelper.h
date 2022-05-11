@@ -187,7 +187,7 @@ class DXHelper;
 				nullptr, \
 				D3D_COMPILE_STANDARD_FILE_INCLUDE, \
 				entryPoint, \
-				shaderVersion, \
+				shaderVersion,	\
 				0u, \
 				0u, \
 				& shaderBlob, \
@@ -216,4 +216,4 @@ private:
 };
 #endif
 
-#define NR_OF_FRAMES 3
+#define NR_OF_FRAMES 2

@@ -2,6 +2,7 @@
 #include "Renderer.h"
 #include "Scene.h"
 
+#include "Camera.h"
 class Engine
 {
 public:
@@ -17,4 +18,5 @@ private:
 	std::wstring m_AppName;
 	std::unique_ptr<Renderer> m_pRenderer;
 	std::unique_ptr<Scene> m_pScene;
+	std::unique_ptr<Camera> m_pCamera;
 };
