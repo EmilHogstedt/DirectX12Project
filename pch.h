@@ -18,5 +18,7 @@
 #include <stdint.h>
 #include <crtdbg.h>
 #include <assert.h>
+#include <bitset>
+#include <chrono>
 
 #include "DXHelper.h"

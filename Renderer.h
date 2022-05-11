@@ -2,9 +2,15 @@
 #include "DescriptorHeap.h"
 #include "Triangle.h"
 
+class Camera;
 struct ColorData
 {
 	DirectX::XMVECTORF32 Color;
+};
+
+struct WVP
+{
+	DirectX::XMFLOAT4X4 WVPMatrix;
 };
 
 class Renderer
@@ -13,7 +19,7 @@ public:
 	Renderer() noexcept = default;
 	~Renderer() noexcept = default;
 	void Initialize() noexcept;
-	void Begin() noexcept;
+	void Begin(Camera* const pCamera) noexcept;
 	void Submit(/*Objects...*/) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;

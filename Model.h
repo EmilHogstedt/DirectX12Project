@@ -8,8 +8,6 @@ struct Vertex
 	DirectX::XMFLOAT3 normal;
 };
 
-
-
 class Model
 {
 public:

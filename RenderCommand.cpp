@@ -49,3 +49,8 @@ void RenderCommand::Flush() noexcept
 	uint64_t fenceValue = SignalFenceFromGPU();
 	WaitForFenceValue(fenceValue);
 }
+
+void RenderCommand::ResetFenceValue() noexcept
+{
+	/*s_FenceValue++;*/
+}

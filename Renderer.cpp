@@ -3,6 +3,7 @@
 #include "DXCore.h"
 #include "Window.h"
 #include "RenderCommand.h"
+#include "Camera.h"
 
 void Renderer::Initialize() noexcept
 {
@@ -18,9 +19,10 @@ void Renderer::Initialize() noexcept
 	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
+	RenderCommand::ResetFenceValue();
 }
 
-void Renderer::Begin() noexcept
+void Renderer::Begin(Camera* const pCamera) noexcept
 {
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[m_CurrentBackBufferIndex];
 	auto pCommandList = DXCore::GetCommandList();
@@ -51,10 +53,15 @@ void Renderer::Begin() noexcept
 	STDCALL(pCommandList->RSSetViewports(1u, &m_ViewPort));
 	STDCALL(pCommandList->RSSetScissorRects(1u, &m_ScissorRect));
 
+	static WVP wvpMatrixCBuffer;
+	auto wvpMatrix = DirectX::XMMatrixIdentity() * DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
+	wvpMatrix = DirectX::XMMatrixTranspose(wvpMatrix);
+	DirectX::XMStoreFloat4x4(&wvpMatrixCBuffer.WVPMatrix, wvpMatrix);
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(2u, 4*4, &wvpMatrixCBuffer, 0u));
+
 	static ColorData colorData;
 	colorData.Color = DirectX::Colors::PapayaWhip;
-
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(2u, 3u, &colorData, 0u));
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 3u, &colorData, 0u));
 }
 
 void Renderer::Submit() noexcept
@@ -157,6 +164,14 @@ void Renderer::CreateRootSignature() noexcept
 	indexBufferSRVParameter.Descriptor.RegisterSpace = 0u;						//^
 	indexBufferSRVParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;	//This should be visible in the VERTEX SHADER.
 	rootParameters.push_back(indexBufferSRVParameter);
+
+	D3D12_ROOT_PARAMETER wvpRootParameterVS = {};
+	wvpRootParameterVS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	wvpRootParameterVS.Constants.Num32BitValues = 4*4;
+	wvpRootParameterVS.Constants.ShaderRegister = 0u;
+	wvpRootParameterVS.Constants.RegisterSpace = 0u;
+	wvpRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters.push_back(wvpRootParameterVS);
 
 	D3D12_ROOT_PARAMETER colorRootParameterPS = {};
 	colorRootParameterPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
