@@ -22,6 +22,13 @@ void Scene::Initialize()
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
 	m_pRayTracingManager->Initialize(m_UniqueModels, m_Objects, m_TotalObjects);
+
+	HR(pCommandList->Close());
+	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
+	RenderCommand::Flush();
+
+	HR(pCommandAllocator->Reset());
+	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 }
 
 void Scene::AddVertexObject()

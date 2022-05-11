@@ -15,18 +15,25 @@ void RayTracingManager::Initialize(
 	BuildBottomAcceleration(models);
 
 	//Make sure we are finished building the bottom level acceleration structure before using it.
-	D3D12_RESOURCE_BARRIER uavBarrier = {};
-	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	for (auto resultBuffer : m_ResultBuffersBottom)
-	{
-		uavBarrier.UAV.pResource = resultBuffer.second.Get();
-		STDCALL(DXCore::GetCommandList()->ResourceBarrier(1, &uavBarrier));
-	}
+	std::unique_ptr<D3D12_RESOURCE_BARRIER[]> uavBarrier(DBG_NEW D3D12_RESOURCE_BARRIER[m_ResultBuffersBottom.size()]);
 	
+	uint32_t index = 0;
+	for (auto& resultBuffer : m_ResultBuffersBottom)
+	{
+		uavBarrier[index] = {};
+		uavBarrier[index].Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		uavBarrier[index].UAV.pResource = resultBuffer.second.Get();
+
+		index++;
+	}
+	STDCALL(DXCore::GetCommandList()->ResourceBarrier(m_ResultBuffersBottom.size(), uavBarrier.get()));
+
 	BuildTopAcceleration(models, objects, totalNrObjects);
 
-	uavBarrier.UAV.pResource = m_pResultBufferTop.Get();
-	STDCALL(DXCore::GetCommandList()->ResourceBarrier(1, &uavBarrier));
+	D3D12_RESOURCE_BARRIER topBarrier = {};
+	topBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	topBarrier.UAV.pResource = m_pResultBufferTop.Get();
+	STDCALL(DXCore::GetCommandList()->ResourceBarrier(1, &topBarrier));
 }
 
 void RayTracingManager::Refit() noexcept
@@ -64,7 +71,7 @@ void RayTracingManager::BuildBottomAcceleration(
 	
 	//Go through each unique model and create a result- & scratchbuffer for each.
 	//This is so that they later
-	for (auto model : models)
+	for (auto& model : models)
 	{
 		std::wstring currentModelName = model.second->GetName();
 		geometryDescs[0].Triangles.IndexCount = model.second->GetIndexCount();
@@ -102,18 +109,19 @@ void RayTracingManager::BuildBottomAcceleration(
 		);
 
 		//Finally create the acceleration structure for this model.
-		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC accelerationDesc = {};
+		std::shared_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC> accelerationDesc = std::make_unique<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>();
 		{
-			accelerationDesc.DestAccelerationStructureData = tempResult->GetGPUVirtualAddress();
-			accelerationDesc.Inputs = bottomInputs;
-			accelerationDesc.SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
-			accelerationDesc.ScratchAccelerationStructureData = tempScratch->GetGPUVirtualAddress();
+			accelerationDesc->DestAccelerationStructureData = tempResult->GetGPUVirtualAddress();
+			accelerationDesc->Inputs = bottomInputs;
+			accelerationDesc->SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
+			accelerationDesc->ScratchAccelerationStructureData = tempScratch->GetGPUVirtualAddress();
 		}
 		//Insert the created buffers into the unordered maps.
 		m_ResultBuffersBottom.insert(std::pair(currentModelName, std::move(tempResult)));
 		m_ScratchBuffersBottom.insert(std::pair(currentModelName, std::move(tempScratch)));
+		m_AccelerationDescsBottom.insert(std::pair(currentModelName, accelerationDesc));
 
-		STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(&accelerationDesc, 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
+		STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(accelerationDesc.get(), 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
 	}
 	
 	//Add 1 geometryDesc element per other arbritary geometry.
@@ -138,11 +146,11 @@ void RayTracingManager::BuildTopAcceleration(
 	//Define the desc for the top level instance buffer resource.
 	uint32_t index = 0u;
 	std::unique_ptr<D3D12_RAYTRACING_INSTANCE_DESC[]> instancingDesc(DBG_NEW D3D12_RAYTRACING_INSTANCE_DESC[totalNrObjects]);
-	for (auto model : models)
+	for (auto& model : models)
 	{
 		std::wstring currentModelName = model.first;
 		std::vector<std::shared_ptr<VertexObject>> currentVector = objects.at(currentModelName);
-		for (auto object : currentVector)
+		for (auto& object : currentVector)
 		{
 			DirectX::XMFLOAT4X4 objectTransform = object->GetTransform();
 			//Change the transform to use the object's transform
@@ -214,15 +222,15 @@ void RayTracingManager::BuildTopAcceleration(
 	);
 
 	//Finally create the acceleration structure.
-	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC accelerationDesc = {};
+	m_AccelerationDescTop = std::make_unique<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>();
 	{
-		accelerationDesc.DestAccelerationStructureData = m_pResultBufferTop->GetGPUVirtualAddress();
-		accelerationDesc.Inputs = topInputs;
-		accelerationDesc.SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
-		accelerationDesc.ScratchAccelerationStructureData = m_pScratchBufferTop->GetGPUVirtualAddress();
+		m_AccelerationDescTop->DestAccelerationStructureData = m_pResultBufferTop->GetGPUVirtualAddress();
+		m_AccelerationDescTop->Inputs = topInputs;
+		m_AccelerationDescTop->SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
+		m_AccelerationDescTop->ScratchAccelerationStructureData = m_pScratchBufferTop->GetGPUVirtualAddress();
 	}
 
-	STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(&accelerationDesc, 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
+	STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(m_AccelerationDescTop.get(), 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
 }
 
 void RayTracingManager::CreateCommitedBuffer(
@@ -258,7 +266,7 @@ void RayTracingManager::CreateCommitedBuffer(
 		&bufferDesc,
 		initialState,
 		nullptr,
-		IID_PPV_ARGS(&buffer) //?
+		IID_PPV_ARGS(&buffer)
 	));
 	HR(buffer->SetName(bufferName.c_str()));
 }

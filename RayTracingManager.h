@@ -38,10 +38,12 @@ private:
 	) noexcept;
 
 private:
-	std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<ID3D12Resource>> m_ResultBuffersBottom;
-	std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<ID3D12Resource>> m_ScratchBuffersBottom;
+	std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<ID3D12Resource>> m_ResultBuffersBottom = {};
+	std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<ID3D12Resource>> m_ScratchBuffersBottom = {};
+	std::unordered_map<std::wstring, std::shared_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>> m_AccelerationDescsBottom = {};
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pInstanceBufferTop = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pResultBufferTop = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pScratchBufferTop = nullptr;
+	std::unique_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC> m_AccelerationDescTop = nullptr;
 };
