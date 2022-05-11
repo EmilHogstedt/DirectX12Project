@@ -12,6 +12,7 @@ public:
 	//Initializes all objects in the scene.
 	void Initialize();
 
+	const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& GetCulledVertexObjects() const { return m_Objects; }
 private:
 	void AddVertexObject();
 	void LoadModel();

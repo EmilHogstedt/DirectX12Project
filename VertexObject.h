@@ -12,6 +12,7 @@ public:
 	void Update();
 
 	const DirectX::XMFLOAT4X4& GetTransform() const { return m_Transform; }
+	const std::shared_ptr<Model>& GetModel() const { return m_pModel; }
 private:
 	DirectX::XMFLOAT4X4 m_Transform = {};
 	std::shared_ptr<Model> m_pModel = nullptr;

@@ -21,7 +21,7 @@ void Scene::Initialize()
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
-	m_pRayTracingManager->Initialize(pDevice, pCommandList, m_UniqueModels, m_Objects, m_TotalObjects);
+	m_pRayTracingManager->Initialize(m_UniqueModels, m_Objects, m_TotalObjects);
 }
 
 void Scene::AddVertexObject()
@@ -37,13 +37,13 @@ void Scene::AddVertexObject()
 	DirectX::XMVECTOR scale = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
 	std::shared_ptr<VertexObject> tempObject = std::make_shared<VertexObject>();
 	tempObject->Initialize(
-		tempModel,
+		std::move(tempModel),
 		pos,
 		rot,
 		scale
 	);
 	std::vector<std::shared_ptr<VertexObject>> objects = {};
-	objects.push_back(tempObject);
+	objects.push_back(std::move(tempObject));
 	m_Objects.insert(std::pair(L"Test", objects));
 }
 

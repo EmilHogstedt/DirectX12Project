@@ -10,7 +10,7 @@ void VertexObject::Initialize(std::shared_ptr<Model> objectModel, DirectX::XMVEC
 	DirectX::XMMATRIX tempRotMatrix = {};
 	tempRotMatrix = DirectX::XMMatrixRotationRollPitchYawFromVector(rot);
 	DirectX::XMMATRIX tempScaleMatrix = {};
-	DirectX::XMMatrixScalingFromVector(scale);
+	tempScaleMatrix = DirectX::XMMatrixScalingFromVector(scale);
 	DirectX::XMStoreFloat4x4(&m_Transform, tempScaleMatrix * tempRotMatrix * tempPosMatrix);
 }
 

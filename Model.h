@@ -40,4 +40,6 @@ private:
 	uint32_t m_indexCount = 0u;
 
 	std::wstring m_name = L"";
+
+	std::unique_ptr<Triangle> m_pTriangle = nullptr;
 };

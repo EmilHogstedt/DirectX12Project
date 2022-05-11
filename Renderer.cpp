@@ -11,7 +11,6 @@ void Renderer::Initialize() noexcept
 	CreateRootSignature();
 	CreatePipelineStateObject();
 	CreateViewportAndScissorRect();
-	m_pTriangle = std::make_unique<Triangle>();
 
 	auto pCommandList = DXCore::GetCommandList();
 
@@ -64,13 +63,19 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 3u, &colorData, 0u));
 }
 
-void Renderer::Submit() noexcept
+void Renderer::Submit(const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept
 {
 	auto pCommandList = DXCore::GetCommandList();
 
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(0u, m_pTriangle->GetVertexBuffer()->GetGPUVirtualAddress()));
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, m_pTriangle->GetIndexBuffer()->GetGPUVirtualAddress()));
-	STDCALL(pCommandList->DrawInstanced(m_pTriangle->GetNrOfIndices(), 1u, 0u, 0u));
+	for (auto modelInstances : vertexObjects)
+	{
+		for (auto object : modelInstances.second)
+		{
+			STDCALL(pCommandList->SetGraphicsRootShaderResourceView(0u, object->GetModel()->GetVertexBufferGPUAddress()));
+			STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, object->GetModel()->GetIndexBufferGPUAddress()));
+			STDCALL(pCommandList->DrawInstanced(object->GetModel()->GetIndexCount(), 1u, 0u, 0u));
+		}
+	}
 }
 
 void Renderer::End() noexcept
