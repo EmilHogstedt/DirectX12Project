@@ -11,6 +11,8 @@ void Renderer::Initialize() noexcept
 	CreateRootSignature();
 	CreatePipelineStateObject();
 	CreateViewportAndScissorRect();
+	CreateAllDescriptorHeaps();
+	CreateConstantBuffersForTriangle();
 	m_pTriangle = std::make_unique<Triangle>();
 
 	auto pCommandList = DXCore::GetCommandList();
@@ -20,6 +22,8 @@ void Renderer::Initialize() noexcept
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
 	RenderCommand::ResetFenceValue();
+
+	DirectX::XMStoreFloat4x4(&worldConstantBuffer.WorldMatrix, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
 }
 
 void Renderer::Begin(Camera* const pCamera) noexcept
@@ -31,7 +35,7 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	DescriptorHeap backBufferRTVDescHeap = Window::Get().GetBackBufferRTVHeap();
 	auto backBufferDescriptorHandle = backBufferRTVDescHeap.GetCPUStartHandle();
 	backBufferDescriptorHandle.ptr += m_CurrentBackBufferIndex * backBufferRTVDescHeap.GetDescriptorTypeSize();
-	auto depthBufferDSVHandle = m_DSVDescriptorHeap.GetCPUStartHandle();
+	auto depthBufferDSVHandle = m_pDSVDescriptorHeap->GetCPUStartHandle();
 
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
@@ -53,23 +57,33 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	STDCALL(pCommandList->RSSetViewports(1u, &m_ViewPort));
 	STDCALL(pCommandList->RSSetScissorRects(1u, &m_ScissorRect));
 
-	static WVP wvpMatrixCBuffer;
-	auto wvpMatrix = DirectX::XMMatrixIdentity() * DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
-	wvpMatrix = DirectX::XMMatrixTranspose(wvpMatrix);
-	DirectX::XMStoreFloat4x4(&wvpMatrixCBuffer.WVPMatrix, wvpMatrix);
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(2u, 4*4, &wvpMatrixCBuffer, 0u));
+	STDCALL(pCommandList->SetDescriptorHeaps(1u, m_pShaderBindableDescriptorHeap->GetInterface().GetAddressOf()));
 
-	static ColorData colorData;
-	colorData.Color = DirectX::Colors::PapayaWhip;
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 3u, &colorData, 0u));
+	static VP vpMatrixCBuffer;
+	auto vpMatrix = DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
+	vpMatrix = DirectX::XMMatrixTranspose(vpMatrix);
+	DirectX::XMStoreFloat4x4(&vpMatrixCBuffer.VPMatrix, vpMatrix);
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 4*4, &vpMatrixCBuffer, 0u));
 }
 
 void Renderer::Submit() noexcept
 {
 	auto pCommandList = DXCore::GetCommandList();
+	auto index = Window::Get().GetCurrentBackbufferIndex();
 
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(0u, m_pTriangle->GetVertexBuffer()->GetGPUVirtualAddress()));
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, m_pTriangle->GetIndexBuffer()->GetGPUVirtualAddress()));
+	auto m = DirectX::XMLoadFloat4x4(&worldConstantBuffer.WorldMatrix);
+	m *= DirectX::XMMatrixTranslation(1.0f, 0.0f, 0.0f);
+	m = DirectX::XMMatrixTranspose(m);
+	DirectX::XMStoreFloat4x4(&worldConstantBuffer.WorldMatrix, m);
+
+	UpdateTriangleConstantBuffer(&worldConstantBuffer.WorldMatrix);
+
+	auto gpuHandle = m_pShaderBindableDescriptorHeap->GetGPUStartHandle();
+	gpuHandle.ptr += m_pShaderBindableDescriptorHeap->GetDescriptorTypeSize() * index * 20'000;
+	STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
+
+	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, m_pTriangle->GetVertexBuffer()->GetGPUVirtualAddress()));
+	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(2u, m_pTriangle->GetIndexBuffer()->GetGPUVirtualAddress()));
 	STDCALL(pCommandList->DrawInstanced(m_pTriangle->GetNrOfIndices(), 1u, 0u, 0u));
 }
 
@@ -138,19 +152,34 @@ void Renderer::CreateDepthBuffer() noexcept
 	));
 	HR(m_pDepthBuffer->SetName(L"Main Depth Buffer"));
 
-	m_DSVDescriptorHeap = *new(&m_DSVDescriptorHeap)DescriptorHeap(1u, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false);
+	m_pDSVDescriptorHeap = std::make_unique<DescriptorHeap>(1u, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false);
 
 	STDCALL(DXCore::GetDevice()->CreateDepthStencilView
 	(
 		m_pDepthBuffer.Get(), 
 		nullptr, 
-		m_DSVDescriptorHeap.GetCPUStartHandle()
+		m_pDSVDescriptorHeap->GetCPUStartHandle()
 	));
 }
 
 void Renderer::CreateRootSignature() noexcept
 {
 	std::vector<D3D12_ROOT_PARAMETER> rootParameters;
+
+	D3D12_DESCRIPTOR_RANGE descriptorRange = {};
+	descriptorRange.BaseShaderRegister = 1u;
+	descriptorRange.RegisterSpace = 0u;
+	descriptorRange.NumDescriptors = 1u;
+	descriptorRange.OffsetInDescriptorsFromTableStart = 0u;
+	descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+
+	D3D12_ROOT_PARAMETER transformsRootParameterVS = {};
+	transformsRootParameterVS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	transformsRootParameterVS.DescriptorTable.NumDescriptorRanges = 1u;
+	transformsRootParameterVS.DescriptorTable.pDescriptorRanges = &descriptorRange;
+	transformsRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters.push_back(transformsRootParameterVS);
+
 	D3D12_ROOT_PARAMETER vertexBufferSRVParameter = {};
 	vertexBufferSRVParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;		
 	vertexBufferSRVParameter.Descriptor.ShaderRegister = 0u;					
@@ -165,21 +194,13 @@ void Renderer::CreateRootSignature() noexcept
 	indexBufferSRVParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;	//This should be visible in the VERTEX SHADER.
 	rootParameters.push_back(indexBufferSRVParameter);
 
-	D3D12_ROOT_PARAMETER wvpRootParameterVS = {};
-	wvpRootParameterVS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	wvpRootParameterVS.Constants.Num32BitValues = 4*4;
-	wvpRootParameterVS.Constants.ShaderRegister = 0u;
-	wvpRootParameterVS.Constants.RegisterSpace = 0u;
-	wvpRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters.push_back(wvpRootParameterVS);
-
-	D3D12_ROOT_PARAMETER colorRootParameterPS = {};
-	colorRootParameterPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	colorRootParameterPS.Constants.Num32BitValues = 3;
-	colorRootParameterPS.Constants.ShaderRegister = 0u;
-	colorRootParameterPS.Constants.RegisterSpace = 0u;
-	colorRootParameterPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters.push_back(colorRootParameterPS);
+	D3D12_ROOT_PARAMETER vpRootParameterVS = {};
+	vpRootParameterVS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	vpRootParameterVS.Constants.Num32BitValues = 4*4;
+	vpRootParameterVS.Constants.ShaderRegister = 0u;
+	vpRootParameterVS.Constants.RegisterSpace = 0u;
+	vpRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters.push_back(vpRootParameterVS);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDescriptor = {};
 	rootSignatureDescriptor.NumParameters = static_cast<UINT>(rootParameters.size());
@@ -303,4 +324,74 @@ void Renderer::CreateViewportAndScissorRect() noexcept
 	m_ScissorRect.top = 0u;
 	m_ScissorRect.right = static_cast<LONG>(m_ViewPort.Width);
 	m_ScissorRect.bottom = static_cast<LONG>(m_ViewPort.Height);
+}
+
+void Renderer::CreateAllDescriptorHeaps() noexcept
+{
+	m_pShaderBindableDescriptorHeap = std::make_unique<DescriptorHeap>(600'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	
+	for (uint8_t i{ 0u }; i < NR_OF_FRAMES; ++i)
+	{
+		m_pShaderBindableNonVisibleDescriptorHeaps[i] = std::make_unique<DescriptorHeap>(600'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false);
+	}
+}
+
+void Renderer::CreateConstantBuffersForTriangle() noexcept
+{
+	D3D12_HEAP_PROPERTIES bufferHeapProperties = {};
+	bufferHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	bufferHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	bufferHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	bufferHeapProperties.CreationNodeMask = 0u;
+	bufferHeapProperties.VisibleNodeMask = 0u;
+
+	unsigned int byteWidth = sizeof(float) * 16;
+	byteWidth = (byteWidth + 255) & ~255;
+
+	D3D12_RESOURCE_DESC bufferDescriptor = {};
+	bufferDescriptor.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDescriptor.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+	bufferDescriptor.Width = byteWidth;
+	bufferDescriptor.Height = 1u;
+	bufferDescriptor.DepthOrArraySize = 1u;
+	bufferDescriptor.MipLevels = 1u;
+	bufferDescriptor.Format = DXGI_FORMAT_UNKNOWN;
+	bufferDescriptor.Flags = D3D12_RESOURCE_FLAG_NONE;
+	bufferDescriptor.SampleDesc.Count = 1u;
+	bufferDescriptor.SampleDesc.Quality = 0u;
+	bufferDescriptor.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	for (uint8_t i{ 0u }; i < NR_OF_FRAMES; i++)
+	{
+		HR(DXCore::GetDevice()->CreateCommittedResource(&bufferHeapProperties, D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_NONE,
+			&bufferDescriptor, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_pTriangleConstantBuffers[i])));
+
+		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pShaderBindableNonVisibleDescriptorHeaps[i]->GetCPUStartHandle();
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDescriptor = {};
+		constantBufferDescriptor.BufferLocation = m_pTriangleConstantBuffers[i]->GetGPUVirtualAddress();
+		constantBufferDescriptor.SizeInBytes = (byteWidth + 255) & ~255;
+
+		STDCALL(DXCore::GetDevice()->CreateConstantBufferView(&constantBufferDescriptor, handle));
+	}
+}
+
+void Renderer::UpdateTriangleConstantBuffer(void* pData) noexcept
+{
+	auto index = Window::Get().GetCurrentBackbufferIndex();
+
+	D3D12_RANGE range = { 0,0 };
+	auto address = m_pTriangleConstantBuffers[index]->GetGPUVirtualAddress();
+	size_t dataSize = sizeof(float) * 16;
+
+	HR(m_pTriangleConstantBuffers[index]->Map(0u, &range, reinterpret_cast<void**>(&address)));
+	std::memcpy(reinterpret_cast<void*>(address), reinterpret_cast<unsigned char*>(pData), dataSize);
+	STDCALL(m_pTriangleConstantBuffers[index]->Unmap(0u, nullptr));
+
+	auto srcHandle = m_pShaderBindableNonVisibleDescriptorHeaps[index]->GetCPUStartHandle();
+
+	auto dstHandle = m_pShaderBindableDescriptorHeap->GetCPUStartHandle();
+	dstHandle.ptr += DXCore::GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 20'000 * index;
+
+	STDCALL(DXCore::GetDevice()->CopyDescriptorsSimple(1u, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 }
