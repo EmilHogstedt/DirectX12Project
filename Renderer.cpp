@@ -52,28 +52,34 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	STDCALL(pCommandList->RSSetViewports(1u, &m_ViewPort));
 	STDCALL(pCommandList->RSSetScissorRects(1u, &m_ScissorRect));
 
-	static WVP wvpMatrixCBuffer;
-	auto wvpMatrix = DirectX::XMMatrixIdentity() * DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
-	wvpMatrix = DirectX::XMMatrixTranspose(wvpMatrix);
-	DirectX::XMStoreFloat4x4(&wvpMatrixCBuffer.WVPMatrix, wvpMatrix);
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(2u, 4*4, &wvpMatrixCBuffer, 0u));
-
-	static ColorData colorData;
-	colorData.Color = DirectX::Colors::PapayaWhip;
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 3u, &colorData, 0u));
 }
 
-void Renderer::Submit(const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept
+void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, Camera* const pCamera) noexcept
 {
 	auto pCommandList = DXCore::GetCommandList();
+	//Per frame binds should go here. (CameraVP)
 
 	for (auto modelInstances : vertexObjects)
 	{
 		for (auto object : modelInstances.second)
 		{
-			STDCALL(pCommandList->SetGraphicsRootShaderResourceView(0u, object->GetModel()->GetVertexBufferGPUAddress()));
-			STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, object->GetModel()->GetIndexBufferGPUAddress()));
-			STDCALL(pCommandList->DrawInstanced(object->GetModel()->GetIndexCount(), 1u, 0u, 0u));
+			//Per object binds should go here. (Transform)
+			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
+			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
+			{
+				//Per mesh binds should go here. (Vertex & Index buffer)
+				STDCALL(pCommandList->SetGraphicsRootShaderResourceView(0u, objectMeshes[i]->GetVertexBufferGPUAddress()));
+				STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, objectMeshes[i]->GetIndexBufferGPUAddress()));
+
+				//Wont work with more than 1.
+				WVP wvpMatrixCBuffer;
+				auto wvpMatrix = DirectX::XMLoadFloat4x4(&(object->GetTransform())) * DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
+				wvpMatrix = DirectX::XMMatrixTranspose(wvpMatrix);
+				DirectX::XMStoreFloat4x4(&wvpMatrixCBuffer.WVPMatrix, wvpMatrix);
+				STDCALL(pCommandList->SetGraphicsRoot32BitConstants(2u, 4 * 4, &wvpMatrixCBuffer, 0u));
+
+				STDCALL(pCommandList->DrawInstanced(objectMeshes[i]->GetIndexCount(), 1u, 0u, 0u));
+			}
 		}
 	}
 }
@@ -177,14 +183,6 @@ void Renderer::CreateRootSignature() noexcept
 	wvpRootParameterVS.Constants.RegisterSpace = 0u;
 	wvpRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 	rootParameters.push_back(wvpRootParameterVS);
-
-	D3D12_ROOT_PARAMETER colorRootParameterPS = {};
-	colorRootParameterPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	colorRootParameterPS.Constants.Num32BitValues = 3;
-	colorRootParameterPS.Constants.ShaderRegister = 0u;
-	colorRootParameterPS.Constants.RegisterSpace = 0u;
-	colorRootParameterPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters.push_back(colorRootParameterPS);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDescriptor = {};
 	rootSignatureDescriptor.NumParameters = static_cast<UINT>(rootParameters.size());
@@ -300,7 +298,7 @@ void Renderer::CreateViewportAndScissorRect() noexcept
 	m_ViewPort.TopLeftX = 0u;
 	m_ViewPort.TopLeftY = 0u;
 	m_ViewPort.MinDepth = 0.0f;
-	m_ViewPort.MaxDepth = 1.0f;
+	m_ViewPort.MaxDepth = 1.0f; //?
 	m_ViewPort.Width = static_cast<float>(width);
 	m_ViewPort.Height = static_cast<float>(height);
 

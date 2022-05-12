@@ -21,7 +21,7 @@ public:
 	~Renderer() noexcept = default;
 	void Initialize() noexcept;
 	void Begin(Camera* const pCamera) noexcept;
-	void Submit(const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept;
+	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, Camera* const pCamera) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
 private:

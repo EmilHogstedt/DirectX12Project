@@ -2,9 +2,9 @@
 #include "RayTracingManager.h"
 
 void RayTracingManager::Initialize(
-	const std::unordered_map<std::wstring, std::shared_ptr<Model>>& models,
-	const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& objects,
-	uint32_t totalNrObjects
+	const std::unordered_map<std::string, std::shared_ptr<Model>>& models,
+	const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& objects,
+	uint32_t totalNrMeshes
 ) noexcept
 {
 	//Make sure to reset command memory before this. Vertex buffer needs to have a GPU address.
@@ -15,20 +15,24 @@ void RayTracingManager::Initialize(
 	BuildBottomAcceleration(models);
 
 	//Make sure we are finished building the bottom level acceleration structure before using it.
-	std::unique_ptr<D3D12_RESOURCE_BARRIER[]> uavBarrier(DBG_NEW D3D12_RESOURCE_BARRIER[m_ResultBuffersBottom.size()]);
+	std::unique_ptr<D3D12_RESOURCE_BARRIER[]> uavBarrier(DBG_NEW D3D12_RESOURCE_BARRIER[m_BottomBuffers]);
 	
 	uint32_t index = 0;
-	for (auto& resultBuffer : m_ResultBuffersBottom)
+	for (auto& resultBufferMapEntry : m_ResultBuffersBottom)
 	{
-		uavBarrier[index] = {};
-		uavBarrier[index].Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-		uavBarrier[index].UAV.pResource = resultBuffer.second.Get();
+		std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>& resultBufferVector = resultBufferMapEntry.second;
+		for (auto& resultBuffer : resultBufferVector)
+		{
+			uavBarrier[index] = {};
+			uavBarrier[index].Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+			uavBarrier[index].UAV.pResource = resultBuffer.Get();
 
-		index++;
+			index++;
+		}
 	}
-	STDCALL(DXCore::GetCommandList()->ResourceBarrier(m_ResultBuffersBottom.size(), uavBarrier.get()));
+	STDCALL(DXCore::GetCommandList()->ResourceBarrier((UINT)m_ResultBuffersBottom.size(), uavBarrier.get()));
 
-	BuildTopAcceleration(models, objects, totalNrObjects);
+	BuildTopAcceleration(models, objects, totalNrMeshes);
 
 	D3D12_RESOURCE_BARRIER topBarrier = {};
 	topBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
@@ -45,7 +49,7 @@ void RayTracingManager::Rebuild() noexcept
 }
 
 void RayTracingManager::BuildBottomAcceleration(
-	const std::unordered_map<std::wstring, std::shared_ptr<Model>>& models
+	const std::unordered_map<std::string, std::shared_ptr<Model>>& models
 ) noexcept
 {
 	
@@ -69,113 +73,133 @@ void RayTracingManager::BuildBottomAcceleration(
 		bottomInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	}
 	
-	//Go through each unique model and create a result- & scratchbuffer for each.
-	//This is so that they later
+	//Go through each unique model and create a result- & scratchbuffer for each mesh.
 	for (auto& model : models)
 	{
-		std::wstring currentModelName = model.second->GetName();
-		geometryDescs[0].Triangles.IndexCount = model.second->GetIndexCount();
-		geometryDescs[0].Triangles.VertexCount = model.second->GetVertexCount();
-		geometryDescs[0].Triangles.IndexBuffer = model.second->GetIndexBufferGPUAddress();
-		geometryDescs[0].Triangles.VertexBuffer.StartAddress = model.second->GetVertexBufferGPUAddress();
-		
-		bottomInputs.pGeometryDescs = geometryDescs;
+		std::string currentModelName = model.first;
+		const std::vector<std::unique_ptr<Mesh>>& modelMeshes = model.second->GetMeshes();
 
-		//Get prebuild info that is used for creating the acceleration structure.
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
-		STDCALL(DXCore::GetDevice()->GetRaytracingAccelerationStructurePrebuildInfo(&bottomInputs, &prebuildInfo));
+		m_ResultBuffersBottom.insert(std::pair(currentModelName, std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>()));
+		m_ScratchBuffersBottom.insert(std::pair(currentModelName, std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>()));
+		m_AccelerationDescsBottom.insert(std::pair(currentModelName, std::vector<std::shared_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>>()));
 
-		//Create temporary local Result & Scratchbuffer which we then put into the unordered maps which can be accessed with the model's name.
-		Microsoft::WRL::ComPtr<ID3D12Resource> tempResult = nullptr;
-		//Create the result buffer.
-		CreateCommitedBuffer(
-			L"Bottom Level Acceleration Structure - Resultbuffer: " + currentModelName,
-			tempResult,
-			D3D12_HEAP_TYPE_DEFAULT,
-			prebuildInfo.ResultDataMaxSizeInBytes,
-			D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-			D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
-		);
-
-		Microsoft::WRL::ComPtr<ID3D12Resource> tempScratch = nullptr;
-		//Create the scratch buffer.
-		CreateCommitedBuffer(
-			L"Bottom Level Acceleration Structure - Scratchbuffer: " + currentModelName,
-			tempScratch,
-			D3D12_HEAP_TYPE_DEFAULT,
-			prebuildInfo.ScratchDataSizeInBytes,
-			D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-			D3D12_RESOURCE_STATE_UNORDERED_ACCESS
-		);
-
-		//Finally create the acceleration structure for this model.
-		std::shared_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC> accelerationDesc = std::make_unique<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>();
+		//For each mesh in the current model.
+		for (uint32_t i{ 0u }; i < modelMeshes.size(); i++)
 		{
-			accelerationDesc->DestAccelerationStructureData = tempResult->GetGPUVirtualAddress();
-			accelerationDesc->Inputs = bottomInputs;
-			accelerationDesc->SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
-			accelerationDesc->ScratchAccelerationStructureData = tempScratch->GetGPUVirtualAddress();
-		}
-		//Insert the created buffers into the unordered maps.
-		m_ResultBuffersBottom.insert(std::pair(currentModelName, std::move(tempResult)));
-		m_ScratchBuffersBottom.insert(std::pair(currentModelName, std::move(tempScratch)));
-		m_AccelerationDescsBottom.insert(std::pair(currentModelName, accelerationDesc));
+			geometryDescs[0].Triangles.IndexCount = modelMeshes[i]->GetIndexCount();
+			geometryDescs[0].Triangles.VertexCount = modelMeshes[i]->GetVertexCount();
+			geometryDescs[0].Triangles.IndexBuffer = modelMeshes[i]->GetIndexBufferGPUAddress();
+			geometryDescs[0].Triangles.VertexBuffer.StartAddress = modelMeshes[i]->GetVertexBufferGPUAddress();
 
-		STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(accelerationDesc.get(), 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
+			bottomInputs.pGeometryDescs = geometryDescs;
+
+			//Get prebuild info that is used for creating the acceleration structure.
+			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
+			STDCALL(DXCore::GetDevice()->GetRaytracingAccelerationStructurePrebuildInfo(&bottomInputs, &prebuildInfo));
+
+			//Create temporary local Result & Scratchbuffer which we then put into the unordered maps which can be accessed with the model's name.
+			Microsoft::WRL::ComPtr<ID3D12Resource> tempResult = nullptr;
+			//Create the result buffer.
+			CreateCommitedBuffer(
+				"Bottom Level Acceleration Structure - Resultbuffer: " + currentModelName,
+				tempResult,
+				D3D12_HEAP_TYPE_DEFAULT,
+				prebuildInfo.ResultDataMaxSizeInBytes,
+				D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
+			);
+
+			Microsoft::WRL::ComPtr<ID3D12Resource> tempScratch = nullptr;
+			//Create the scratch buffer.
+			CreateCommitedBuffer(
+				"Bottom Level Acceleration Structure - Scratchbuffer: " + currentModelName,
+				tempScratch,
+				D3D12_HEAP_TYPE_DEFAULT,
+				prebuildInfo.ScratchDataSizeInBytes,
+				D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+			);
+
+			//Finally create the acceleration structure for this model mesh.
+			std::shared_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC> accelerationDesc = std::make_unique<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>();
+			{
+				accelerationDesc->DestAccelerationStructureData = tempResult->GetGPUVirtualAddress();
+				accelerationDesc->Inputs = bottomInputs;
+				accelerationDesc->SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
+				accelerationDesc->ScratchAccelerationStructureData = tempScratch->GetGPUVirtualAddress();
+			}
+			//Insert the created buffers into the unordered map vectors.
+			m_ResultBuffersBottom[currentModelName].push_back(std::move(tempResult));
+			m_ScratchBuffersBottom[currentModelName].push_back(std::move(tempScratch));
+			m_AccelerationDescsBottom[currentModelName].push_back(accelerationDesc);
+
+			STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(accelerationDesc.get(), 0, nullptr)); //Maybe catch postbuild info here when rebuilding/refitting is needed?
+			m_BottomBuffers++;
+		}
 	}
 	
 	//Add 1 geometryDesc element per other arbritary geometry.
 }
 
 void RayTracingManager::BuildTopAcceleration(
-	const std::unordered_map<std::wstring, std::shared_ptr<Model>>& models,
-	const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& objects,
-	uint32_t totalNrObjects
+	const std::unordered_map<std::string, std::shared_ptr<Model>>& models,
+	const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& objects,
+	uint32_t totalNrMeshes
 ) noexcept
 {
 	//Create the top level instance buffer resource.
 	CreateCommitedBuffer(
-		L"Top Level Acceleration Structure - InstanceBuffer",
+		"Top Level Acceleration Structure - InstanceBuffer",
 		m_pInstanceBufferTop,
 		D3D12_HEAP_TYPE_UPLOAD,
-		sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * totalNrObjects,
+		sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * totalNrMeshes,
 		D3D12_RESOURCE_FLAG_NONE,
 		D3D12_RESOURCE_STATE_GENERIC_READ
 	);
 
 	//Define the desc for the top level instance buffer resource.
 	uint32_t index = 0u;
-	std::unique_ptr<D3D12_RAYTRACING_INSTANCE_DESC[]> instancingDesc(DBG_NEW D3D12_RAYTRACING_INSTANCE_DESC[totalNrObjects]);
+	std::unique_ptr<D3D12_RAYTRACING_INSTANCE_DESC[]> instancingDesc(DBG_NEW D3D12_RAYTRACING_INSTANCE_DESC[totalNrMeshes]);
+	//For each unique model
 	for (auto& model : models)
 	{
-		std::wstring currentModelName = model.first;
+		//For each object using that unique model.
+		std::string currentModelName = model.first;
 		std::vector<std::shared_ptr<VertexObject>> currentVector = objects.at(currentModelName);
 		for (auto& object : currentVector)
 		{
-			DirectX::XMFLOAT4X4 objectTransform = object->GetTransform();
-			//Change the transform to use the object's transform
-			//First row.
-			instancingDesc[index].Transform[0][0] = objectTransform._11;
-			instancingDesc[index].Transform[0][1] = objectTransform._12;
-			instancingDesc[index].Transform[0][2] = objectTransform._13;
-			instancingDesc[index].Transform[0][3] = objectTransform._14;
-			//Second row.
-			instancingDesc[index].Transform[1][0] = objectTransform._21;
-			instancingDesc[index].Transform[1][1] = objectTransform._22;
-			instancingDesc[index].Transform[1][2] = objectTransform._23;
-			instancingDesc[index].Transform[1][3] = objectTransform._24;
-			//Third row.
-			instancingDesc[index].Transform[2][0] = objectTransform._31;
-			instancingDesc[index].Transform[2][1] = objectTransform._32;
-			instancingDesc[index].Transform[2][2] = objectTransform._33;
-			instancingDesc[index].Transform[2][3] = objectTransform._34;
+			//For each mesh that object uses.
+			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
+			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
+			{
+				DirectX::XMFLOAT4X4 objectTransform = object->GetTransform();
+				//Change the transform to use the object's transform
+				//First row.
+				instancingDesc[index].Transform[0][0] = objectTransform._11;
+				instancingDesc[index].Transform[0][1] = objectTransform._12;
+				instancingDesc[index].Transform[0][2] = objectTransform._13;
+				instancingDesc[index].Transform[0][3] = objectTransform._14;
+				//Second row.
+				instancingDesc[index].Transform[1][0] = objectTransform._21;
+				instancingDesc[index].Transform[1][1] = objectTransform._22;
+				instancingDesc[index].Transform[1][2] = objectTransform._23;
+				instancingDesc[index].Transform[1][3] = objectTransform._24;
+				//Third row.
+				instancingDesc[index].Transform[2][0] = objectTransform._31;
+				instancingDesc[index].Transform[2][1] = objectTransform._32;
+				instancingDesc[index].Transform[2][2] = objectTransform._33;
+				instancingDesc[index].Transform[2][3] = objectTransform._34;
 
-			instancingDesc[index].InstanceID = index;
-			instancingDesc[index].InstanceMask = 0xFF;
-			instancingDesc[index].InstanceContributionToHitGroupIndex = 0;
-			instancingDesc[index].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
-			instancingDesc[index].AccelerationStructure = m_ResultBuffersBottom[currentModelName]->GetGPUVirtualAddress();
-			index++;
+				instancingDesc[index].InstanceID = index;
+				instancingDesc[index].InstanceMask = 0xFF;
+				instancingDesc[index].InstanceContributionToHitGroupIndex = 0;
+				instancingDesc[index].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+				instancingDesc[index].AccelerationStructure = ((m_ResultBuffersBottom[currentModelName])[i])->GetGPUVirtualAddress();
+				index++;
+			}
+			//Only increment the index for each object, we do not want different meshes in the same object to have different indices.
+			//This is to be swapped to a material number in the future.
+			
 		}
 	}
 	
@@ -183,7 +207,7 @@ void RayTracingManager::BuildTopAcceleration(
 	D3D12_RANGE zero = { 0, 0 };
 	unsigned char* mappedPtr = nullptr;
 	HR(m_pInstanceBufferTop->Map(0, &zero, reinterpret_cast<void**>(&mappedPtr)));
-	std::memcpy(mappedPtr, &instancingDesc, sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * totalNrObjects);
+	std::memcpy(mappedPtr, &instancingDesc, sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * totalNrMeshes);
 	STDCALL(m_pInstanceBufferTop->Unmap(0, nullptr));
 
 	//Create the top level acceleration structure description.
@@ -191,7 +215,7 @@ void RayTracingManager::BuildTopAcceleration(
 	{
 		topInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 		topInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE; //Maybe change this to faster build and make it a member variable.
-		topInputs.NumDescs = totalNrObjects;
+		topInputs.NumDescs = totalNrMeshes;
 		topInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		topInputs.InstanceDescs = m_pInstanceBufferTop->GetGPUVirtualAddress();
 	}
@@ -203,7 +227,7 @@ void RayTracingManager::BuildTopAcceleration(
 	//Create the buffers and acceleration structure.
 	//Create the result buffer.
 	CreateCommitedBuffer(
-		L"Top Level Acceleration Structure - ResultBuffer",
+		"Top Level Acceleration Structure - ResultBuffer",
 		m_pResultBufferTop,
 		D3D12_HEAP_TYPE_DEFAULT,
 		prebuildInfo.ResultDataMaxSizeInBytes,
@@ -213,7 +237,7 @@ void RayTracingManager::BuildTopAcceleration(
 
 	//Create the scratch buffer.
 	CreateCommitedBuffer(
-		L"Top Level Acceleration Structure - ScratchBuffer",
+		"Top Level Acceleration Structure - ScratchBuffer",
 		m_pScratchBufferTop,
 		D3D12_HEAP_TYPE_DEFAULT,
 		prebuildInfo.ScratchDataSizeInBytes,
@@ -234,7 +258,7 @@ void RayTracingManager::BuildTopAcceleration(
 }
 
 void RayTracingManager::CreateCommitedBuffer(
-	std::wstring bufferName,
+	std::string bufferName,
 	Microsoft::WRL::ComPtr<ID3D12Resource>& buffer,
 	D3D12_HEAP_TYPE heapType,
 	uint64_t bufferSize,
@@ -268,5 +292,7 @@ void RayTracingManager::CreateCommitedBuffer(
 		nullptr,
 		IID_PPV_ARGS(&buffer)
 	));
-	HR(buffer->SetName(bufferName.c_str()));
+
+	std::wstring wideName(bufferName.begin(), bufferName.end());
+	HR(buffer->SetName(wideName.c_str()));
 }

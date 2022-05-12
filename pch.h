@@ -25,5 +25,7 @@
 #include <assert.h>
 #include <bitset>
 #include <chrono>
+#include <codecvt>
+#include <locale>
 
 #include "DXHelper.h"

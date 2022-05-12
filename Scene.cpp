@@ -7,7 +7,8 @@ void Scene::Initialize()
 
 
 	//Create objects here.
-	AddVertexObject();
+	AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(0.0f, 0.0f, 1000.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(0.5f, 0.5f, 0.5f, 1.0f));
+	AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(500.0f, 0.0f, 1000.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(0.5f, 0.5f, 0.5f, 1.0f));
 
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
 	auto pCommandList = DXCore::GetCommandList();
@@ -21,7 +22,7 @@ void Scene::Initialize()
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
-	m_pRayTracingManager->Initialize(m_UniqueModels, m_Objects, m_TotalObjects);
+	m_pRayTracingManager->Initialize(m_UniqueModels, m_Objects, m_TotalMeshes);
 
 	HR(pCommandList->Close());
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
@@ -31,17 +32,30 @@ void Scene::Initialize()
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 }
 
-void Scene::AddVertexObject()
-{
-	m_TotalObjects++;
-	
-	std::shared_ptr<Model> tempModel = std::make_shared<Model>();
-	tempModel->Initialize(L"Test");
-	m_UniqueModels.insert(std::pair(L"Test", tempModel));
+void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, DirectX::XMVECTOR scale)
+{	
+	std::shared_ptr<Model> tempModel = nullptr;
+	bool newModel = false;
 
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	DirectX::XMVECTOR rot = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	DirectX::XMVECTOR scale = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+	//Check if the requested model is new or not.
+	if (m_UniqueModels.find(path) == m_UniqueModels.end())
+	{
+		//If it is a new model we have to create it and initialize (load it using Assimp) the model.
+		//It is then inserted into our unique models map.
+		tempModel = std::make_shared<Model>();
+		tempModel->Initialize(path);
+		m_UniqueModels.insert(std::pair(path, tempModel));
+
+		newModel = true;
+	}
+	else
+	{
+		//Otherwise we simply fetch the shared_ptr to the unique model.
+		tempModel = m_UniqueModels[path];
+	}
+	m_TotalMeshes += (uint32_t)(tempModel->GetMeshes().size());
+
+	//No matter the case we want to create a new object using the fetched model.
 	std::shared_ptr<VertexObject> tempObject = std::make_shared<VertexObject>();
 	tempObject->Initialize(
 		std::move(tempModel),
@@ -49,12 +63,21 @@ void Scene::AddVertexObject()
 		rot,
 		scale
 	);
-	std::vector<std::shared_ptr<VertexObject>> objects = {};
-	objects.push_back(std::move(tempObject));
-	m_Objects.insert(std::pair(L"Test", objects));
-}
-
-void Scene::LoadModel()
-{
-	//Transition the vertex & index buffer resources after creation.
+	
+	if (newModel)
+	{
+		//If the model was new we have to create a new vector that we add the object to. We then insert the vector into our objects map.
+		std::vector<std::shared_ptr<VertexObject>> objects = {};
+		objects.push_back(std::move(tempObject));
+		m_Objects.insert(std::pair(path, objects));
+	}
+	else
+	{
+		//If the model already existed we simply push back the new object to the already existing vector.
+		m_Objects[path].push_back(std::move(tempObject));
+	}
+	
+	//Increment the total number of objects.
+	m_TotalObjects++;
+	
 }
