@@ -68,11 +68,22 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 
 void Renderer::Submit() noexcept
 {
+	static float mover = 0.0f;
+	mover += 0.001f;
+
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentBackbufferIndex();
 
 	auto m = DirectX::XMLoadFloat4x4(&worldConstantBuffer.WorldMatrix);
-	m *= DirectX::XMMatrixTranslation(1.0f, 0.0f, 0.0f);
+
+	DirectX::XMFLOAT3 translation = {mover, 0.0f, 0.0f};
+	DirectX::XMFLOAT3 rotation = {0.0f, 0.0f, 0.0f};
+	DirectX::XMFLOAT3 scale = {1.0f, 1.0f, 1.0f};
+	float angleX = 0.0f;
+	float angleY = 0.0f;
+	float angleZ = 0.0f;
+	m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scale)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translation));
+
 	m = DirectX::XMMatrixTranspose(m);
 	DirectX::XMStoreFloat4x4(&worldConstantBuffer.WorldMatrix, m);
 
