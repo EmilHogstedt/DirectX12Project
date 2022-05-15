@@ -2,7 +2,7 @@
 class DescriptorHeap
 {
 public:
-	DescriptorHeap() noexcept;
+	DescriptorHeap() = default;
 	DescriptorHeap(uint32_t capacity, D3D12_DESCRIPTOR_HEAP_TYPE heapType, bool shaderVisible) noexcept;
 	~DescriptorHeap() noexcept = default;
 	[[nodiscard]] constexpr Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetInterface() noexcept { return m_pDescriptorHeap; }

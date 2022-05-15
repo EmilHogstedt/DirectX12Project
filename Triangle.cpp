@@ -6,9 +6,10 @@
 Triangle::Triangle() noexcept
 	: m_NrOfIndices{3u}
 {
+	DirectX::XMStoreFloat4x4(&m_WorldMatrix, DirectX::XMMatrixIdentity());
+
 	Microsoft::WRL::ComPtr<ID3D12Heap> pVBHeap{nullptr};
 	Microsoft::WRL::ComPtr<ID3D12Heap> pIBHeap{ nullptr };
-
 	SimpleVertex triangle[3];
 	triangle[0].Position = DirectX::XMFLOAT3{ -0.5f, -0.5f, 0.0f };
 	triangle[1].Position = DirectX::XMFLOAT3{ 0.0f, 0.5f, 0.0f };

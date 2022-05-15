@@ -4,6 +4,7 @@
 #include "Window.h"
 #include "RenderCommand.h"
 #include "Camera.h"
+#include "MemoryManager.h"
 
 void Renderer::Initialize() noexcept
 {
@@ -11,19 +12,39 @@ void Renderer::Initialize() noexcept
 	CreateRootSignature();
 	CreatePipelineStateObject();
 	CreateViewportAndScissorRect();
-	CreateAllDescriptorHeaps();
-	CreateConstantBuffersForTriangle();
-	m_pTriangle = std::make_unique<Triangle>();
+
 
 	auto pCommandList = DXCore::GetCommandList();
+
+	auto& memoryManager = MemoryManager::Get();
+	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 200'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	memoryManager.AddRangeForDescriptor("ShaderBindables", "TransformsRange", 25'000);
+	memoryManager.CreateNonShaderVisibleDescriptorHeap("Transforms", 25'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	
+	for (uint32_t i{ 0u }; i < 20; ++i)
+	{
+		m_pTriangle[i] = std::make_unique<Triangle>();
+
+		auto m = DirectX::XMLoadFloat4x4(&m_pTriangle[i]->GetWorldMatrix());
+
+		DirectX::XMFLOAT3 translation = { static_cast<float>(i), 0.0f, 0.0f };
+		DirectX::XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
+		DirectX::XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
+		float angleX = 0.0f;
+		float angleY = 0.0f;
+		float angleZ = 0.0f;
+		m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scale)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translation));
+
+		//m = DirectX::XMMatrixTranspose(m);
+		DirectX::XMStoreFloat4x4(&m_pTriangle[i]->GetWorldMatrix(), m);
+
+		m_pTriangle[i]->SetTransform(std::move(memoryManager.CreateConstantBuffer("Transforms", "ShaderBindables", "TransformsRange", sizeof(World))));
+	}
 
 	HR(pCommandList->Close());
 	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
-	RenderCommand::ResetFenceValue();
-
-	DirectX::XMStoreFloat4x4(&worldConstantBuffer.WorldMatrix, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
 }
 
 void Renderer::Begin(Camera* const pCamera) noexcept
@@ -32,9 +53,9 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
 
-	DescriptorHeap backBufferRTVDescHeap = Window::Get().GetBackBufferRTVHeap();
-	auto backBufferDescriptorHandle = backBufferRTVDescHeap.GetCPUStartHandle();
-	backBufferDescriptorHandle.ptr += m_CurrentBackBufferIndex * backBufferRTVDescHeap.GetDescriptorTypeSize();
+	auto& pBackBufferRTVDescHeap = Window::Get().GetBackBufferRTVHeap();
+	auto backBufferDescriptorHandle = pBackBufferRTVDescHeap->GetCPUStartHandle();
+	backBufferDescriptorHandle.ptr += m_CurrentBackBufferIndex * pBackBufferRTVDescHeap->GetDescriptorTypeSize();
 	auto depthBufferDSVHandle = m_pDSVDescriptorHeap->GetCPUStartHandle();
 
 	HR(pCommandAllocator->Reset());
@@ -57,7 +78,8 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	STDCALL(pCommandList->RSSetViewports(1u, &m_ViewPort));
 	STDCALL(pCommandList->RSSetScissorRects(1u, &m_ScissorRect));
 
-	STDCALL(pCommandList->SetDescriptorHeaps(1u, m_pShaderBindableDescriptorHeap->GetInterface().GetAddressOf()));
+	auto pDescriptorHeap = MemoryManager::Get().GetActiveSRVCBVUAVDescriptorHeap();
+	STDCALL(pCommandList->SetDescriptorHeaps(1u, pDescriptorHeap->GetInterface().GetAddressOf()));
 
 	static VP vpMatrixCBuffer;
 	auto vpMatrix = DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
@@ -66,36 +88,45 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 4*4, &vpMatrixCBuffer, 0u));
 }
 
-void Renderer::Submit() noexcept
+void Renderer::Submit(float deltaTime) noexcept
 {
-	static float mover = 0.0f;
-	mover += 0.001f;
+	static float speed = 1.0f;
 
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentBackbufferIndex();
 
-	auto m = DirectX::XMLoadFloat4x4(&worldConstantBuffer.WorldMatrix);
+	for (uint32_t i{ 0u }; i < 20; ++i)
+	{
+		auto m = DirectX::XMLoadFloat4x4(&m_pTriangle[i]->GetWorldMatrix());
+		DirectX::XMVECTOR scale;
+		DirectX::XMVECTOR rotationQuat;
+		DirectX::XMVECTOR translation;
+		DirectX::XMMatrixDecompose(&scale, &rotationQuat, &translation, m);
 
-	DirectX::XMFLOAT3 translation = {mover, 0.0f, 0.0f};
-	DirectX::XMFLOAT3 rotation = {0.0f, 0.0f, 0.0f};
-	DirectX::XMFLOAT3 scale = {1.0f, 1.0f, 1.0f};
-	float angleX = 0.0f;
-	float angleY = 0.0f;
-	float angleZ = 0.0f;
-	m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scale)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translation));
+		DirectX::XMFLOAT3 scaleF;
+		DirectX::XMStoreFloat3(&scaleF, scale);
+		DirectX::XMFLOAT3 translationF; 
+		DirectX::XMStoreFloat3(&translationF, translation);
+		translationF.x += (speed * deltaTime);
 
-	m = DirectX::XMMatrixTranspose(m);
-	DirectX::XMStoreFloat4x4(&worldConstantBuffer.WorldMatrix, m);
+		float angleX = 0.0f;
+		float angleY = 0.0f;
+		float angleZ = 0.0f;
+		m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scaleF)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translationF));
 
-	UpdateTriangleConstantBuffer(&worldConstantBuffer.WorldMatrix);
+		DirectX::XMStoreFloat4x4(&m_pTriangle[i]->GetWorldMatrix(), m);
+		m = DirectX::XMMatrixTranspose(m);
 
-	auto gpuHandle = m_pShaderBindableDescriptorHeap->GetGPUStartHandle();
-	gpuHandle.ptr += m_pShaderBindableDescriptorHeap->GetDescriptorTypeSize() * index * 20'000;
-	STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
+		auto& cbv = m_pTriangle[i]->GetTransformConstantBufferView();
+		MemoryManager::Get().UpdateConstantBuffer(cbv, &m, sizeof(World));
 
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, m_pTriangle->GetVertexBuffer()->GetGPUVirtualAddress()));
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(2u, m_pTriangle->GetIndexBuffer()->GetGPUVirtualAddress()));
-	STDCALL(pCommandList->DrawInstanced(m_pTriangle->GetNrOfIndices(), 1u, 0u, 0u));
+		auto gpuHandle = cbv.GpuHandles[index];
+		STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
+
+		STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, m_pTriangle[i]->GetVertexBuffer()->GetGPUVirtualAddress()));
+		STDCALL(pCommandList->SetGraphicsRootShaderResourceView(2u, m_pTriangle[i]->GetIndexBuffer()->GetGPUVirtualAddress()));
+		STDCALL(pCommandList->DrawInstanced(m_pTriangle[i]->GetNrOfIndices(), 1u, 0u, 0u));
+	}
 }
 
 void Renderer::End() noexcept
@@ -335,74 +366,4 @@ void Renderer::CreateViewportAndScissorRect() noexcept
 	m_ScissorRect.top = 0u;
 	m_ScissorRect.right = static_cast<LONG>(m_ViewPort.Width);
 	m_ScissorRect.bottom = static_cast<LONG>(m_ViewPort.Height);
-}
-
-void Renderer::CreateAllDescriptorHeaps() noexcept
-{
-	m_pShaderBindableDescriptorHeap = std::make_unique<DescriptorHeap>(600'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
-	
-	for (uint8_t i{ 0u }; i < NR_OF_FRAMES; ++i)
-	{
-		m_pShaderBindableNonVisibleDescriptorHeaps[i] = std::make_unique<DescriptorHeap>(600'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false);
-	}
-}
-
-void Renderer::CreateConstantBuffersForTriangle() noexcept
-{
-	D3D12_HEAP_PROPERTIES bufferHeapProperties = {};
-	bufferHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	bufferHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	bufferHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	bufferHeapProperties.CreationNodeMask = 0u;
-	bufferHeapProperties.VisibleNodeMask = 0u;
-
-	unsigned int byteWidth = sizeof(float) * 16;
-	byteWidth = (byteWidth + 255) & ~255;
-
-	D3D12_RESOURCE_DESC bufferDescriptor = {};
-	bufferDescriptor.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bufferDescriptor.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-	bufferDescriptor.Width = byteWidth;
-	bufferDescriptor.Height = 1u;
-	bufferDescriptor.DepthOrArraySize = 1u;
-	bufferDescriptor.MipLevels = 1u;
-	bufferDescriptor.Format = DXGI_FORMAT_UNKNOWN;
-	bufferDescriptor.Flags = D3D12_RESOURCE_FLAG_NONE;
-	bufferDescriptor.SampleDesc.Count = 1u;
-	bufferDescriptor.SampleDesc.Quality = 0u;
-	bufferDescriptor.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	for (uint8_t i{ 0u }; i < NR_OF_FRAMES; i++)
-	{
-		HR(DXCore::GetDevice()->CreateCommittedResource(&bufferHeapProperties, D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_NONE,
-			&bufferDescriptor, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_pTriangleConstantBuffers[i])));
-
-		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pShaderBindableNonVisibleDescriptorHeaps[i]->GetCPUStartHandle();
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDescriptor = {};
-		constantBufferDescriptor.BufferLocation = m_pTriangleConstantBuffers[i]->GetGPUVirtualAddress();
-		constantBufferDescriptor.SizeInBytes = (byteWidth + 255) & ~255;
-
-		STDCALL(DXCore::GetDevice()->CreateConstantBufferView(&constantBufferDescriptor, handle));
-	}
-}
-
-void Renderer::UpdateTriangleConstantBuffer(void* pData) noexcept
-{
-	auto index = Window::Get().GetCurrentBackbufferIndex();
-
-	D3D12_RANGE range = { 0,0 };
-	auto address = m_pTriangleConstantBuffers[index]->GetGPUVirtualAddress();
-	size_t dataSize = sizeof(float) * 16;
-
-	HR(m_pTriangleConstantBuffers[index]->Map(0u, &range, reinterpret_cast<void**>(&address)));
-	std::memcpy(reinterpret_cast<void*>(address), reinterpret_cast<unsigned char*>(pData), dataSize);
-	STDCALL(m_pTriangleConstantBuffers[index]->Unmap(0u, nullptr));
-
-	auto srcHandle = m_pShaderBindableNonVisibleDescriptorHeaps[index]->GetCPUStartHandle();
-
-	auto dstHandle = m_pShaderBindableDescriptorHeap->GetCPUStartHandle();
-	dstHandle.ptr += DXCore::GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 20'000 * index;
-
-	STDCALL(DXCore::GetDevice()->CopyDescriptorsSimple(1u, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 }

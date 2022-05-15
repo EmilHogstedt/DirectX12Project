@@ -28,7 +28,7 @@ void Engine::Run() noexcept
 	while (s_Window.IsRunning())
 	{
 		m_pRenderer->Begin(m_pCamera.get());
-		m_pRenderer->Submit(/*Objects...*/);
+		m_pRenderer->Submit(deltaTime);
 		m_pRenderer->End();
 		
 		m_pCamera->Update(deltaTime);

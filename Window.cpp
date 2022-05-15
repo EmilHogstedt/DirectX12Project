@@ -168,7 +168,7 @@ void Window::CreateBackBufferRTVs()
 {
 	for (uint32_t i{ 0u }; i < NR_OF_FRAMES; ++i)
 	{
-		auto cpuHandle{ m_BackBufferRTVHeap.GetCurrentCPUOffsetHandle() };
+		auto cpuHandle{ m_pBackBufferRTVHeap->GetCurrentCPUOffsetHandle() };
 		Microsoft::WRL::ComPtr<ID3D12Resource> pBackBuffer{ nullptr };
 		HR(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer)));
 
@@ -176,15 +176,14 @@ void Window::CreateBackBufferRTVs()
 		m_pBackBuffers[i] = std::move(pBackBuffer);
 		std::wstring bufferName{ L"BackBuffer #" + std::to_wstring(i) };
 		HR(m_pBackBuffers[i]->SetName(bufferName.c_str()));
-		m_BackBufferRTVHeap.OffsetCPUAddressPointerBy(1);
+		m_pBackBufferRTVHeap->OffsetCPUAddressPointerBy(1);
 	}
 }
 
 void Window::Initialize(const std::wstring& applicationName) noexcept
 {
-	s_Instance = *this;
 	CreateWindow(applicationName);
-	m_BackBufferRTVHeap = *new(&m_BackBufferRTVHeap)DescriptorHeap(NR_OF_FRAMES, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
+	m_pBackBufferRTVHeap = std::make_unique<DescriptorHeap>(NR_OF_FRAMES, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
 	CreateSwapChain();
 	CreateBackBufferRTVs();
 }
