@@ -35,10 +35,9 @@ void Renderer::Initialize() noexcept
 		float angleZ = 0.0f;
 		m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scale)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translation));
 
-		//m = DirectX::XMMatrixTranspose(m);
 		DirectX::XMStoreFloat4x4(&m_pTriangle[i]->GetWorldMatrix(), m);
 
-		m_pTriangle[i]->SetTransform(std::move(memoryManager.CreateConstantBuffer("Transforms", "ShaderBindables", "TransformsRange", sizeof(World))));
+		m_pTriangle[i]->SetConstantBufferView(std::move(memoryManager.CreateConstantBuffer("Transforms", "ShaderBindables", "TransformsRange", sizeof(World))));
 	}
 
 	HR(pCommandList->Close());
