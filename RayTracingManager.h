@@ -18,6 +18,7 @@ public:
 	void Refit() noexcept;
 	void Rebuild() noexcept;
 
+	D3D12_GPU_VIRTUAL_ADDRESS GetTopLevelAccelerationStructure() const { return m_pResultBufferTop->GetGPUVirtualAddress(); }
 private:
 	void BuildBottomAcceleration(
 		const std::unordered_map<std::string, std::shared_ptr<Model>>& models

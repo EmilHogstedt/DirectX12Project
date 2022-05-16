@@ -22,7 +22,7 @@ void Renderer::Initialize() noexcept
 	RenderCommand::Flush();
 }
 
-void Renderer::Begin(Camera* const pCamera) noexcept
+void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[m_CurrentBackBufferIndex];
 	auto pCommandList = DXCore::GetCommandList();
@@ -61,6 +61,9 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	vpMatrix = DirectX::XMMatrixTranspose(vpMatrix);
 	DirectX::XMStoreFloat4x4(&vpMatrixCBuffer.VPMatrix, vpMatrix);
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 4*4, &vpMatrixCBuffer, 0u));
+
+	//Raytracing accelerationstructure.
+	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
 }
 
 void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept
@@ -69,7 +72,6 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentBackbufferIndex();
-	//Per frame binds should go here. (CameraVP)
 
 	for (auto& modelInstances : vertexObjects)
 	{
@@ -207,6 +209,14 @@ void Renderer::CreateRootSignature() noexcept
 	vpRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 	rootParameters.push_back(vpRootParameterVS);
 
+	//For raytracing.
+	D3D12_ROOT_PARAMETER accelerationStructureSRVParameter = {};
+	accelerationStructureSRVParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	accelerationStructureSRVParameter.Descriptor.ShaderRegister = 0u;
+	accelerationStructureSRVParameter.Descriptor.RegisterSpace = 1u;
+	accelerationStructureSRVParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters.push_back(accelerationStructureSRVParameter);
+
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDescriptor = {};
 	rootSignatureDescriptor.NumParameters = static_cast<UINT>(rootParameters.size());
 	rootSignatureDescriptor.pParameters = rootParameters.data();
@@ -281,9 +291,9 @@ void Renderer::CreatePipelineStateObject() noexcept
 
 	//We need the shaders:
 	Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob = nullptr;
-	COMPILE_FROM_FILE(L"VertexShader.hlsl", "main", "vs_5_1", vertexShaderBlob);
+	COMPILE_FROM_FILE(L"VertexShader.hlsl", "main", "vs_6_5", vertexShaderBlob);
 	Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBlob = nullptr;
-	COMPILE_FROM_FILE(L"PixelShader.hlsl", "main", "ps_5_1", pixelShaderBlob);
+	COMPILE_FROM_FILE(L"PixelShader.hlsl", "main", "ps_6_5", pixelShaderBlob);
 
 	//We now create the Graphics Pipe line state, the PSO:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDescriptor = { 0 };
