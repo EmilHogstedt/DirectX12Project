@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <bitset>
 #include <chrono>
+#include <array>
 #include <codecvt>
 #include <locale>
 

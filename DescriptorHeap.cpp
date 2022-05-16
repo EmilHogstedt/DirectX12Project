@@ -2,21 +2,11 @@
 #include "DescriptorHeap.h"
 #include "DXCore.h"
 
-DescriptorHeap::DescriptorHeap() noexcept
-	:m_Capacity{ 0u }, 
-	 m_Size{ 0u }, 
-	 m_HeapType{ }, 
-	 m_IsShaderVisible{ false },
-	 m_pDescriptorHeap{nullptr},
-	 m_IncrementSize{0u},
-	 m_CPUAdressStart{ 0u },
-	 m_CPUCurrentAdressOffset{ 0u },
-	 m_GPUAdressStart{ 0u }
-{
-}
-
 DescriptorHeap::DescriptorHeap(uint32_t capacity, D3D12_DESCRIPTOR_HEAP_TYPE heapType, bool shaderVisible) noexcept
-	: m_Capacity{ capacity }, m_Size{ 0u }, m_HeapType{ heapType }, m_IsShaderVisible{ shaderVisible }
+	 :m_Capacity{capacity}, 
+	  m_Size{0u}, 
+	  m_HeapType{heapType}, 
+	  m_IsShaderVisible{ shaderVisible }
 {
 	DBG_ASSERT(capacity > 0, "Invalid descriptor size.");
 

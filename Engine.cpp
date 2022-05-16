@@ -11,6 +11,11 @@ void Engine::Initialize(const std::wstring& applicationName) noexcept
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
 
+	auto& memoryManager = MemoryManager::Get();
+	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 200'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	memoryManager.AddRangeForDescriptor("ShaderBindables", "TransformsRange", 25'000);
+	memoryManager.CreateNonShaderVisibleDescriptorHeap("Transforms", 25'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	m_pScene = std::make_unique<Scene>();
 	m_pScene->Initialize();
 	m_pRenderer = std::make_unique<Renderer>();
@@ -31,7 +36,7 @@ void Engine::Run() noexcept
 	while (s_Window.IsRunning())
 	{
 		m_pRenderer->Begin(m_pCamera.get());
-		m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), m_pCamera.get());
+		m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
 		m_pRenderer->End();
 		
 		m_pCamera->Update(deltaTime);

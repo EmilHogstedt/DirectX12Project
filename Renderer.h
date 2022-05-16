@@ -4,14 +4,15 @@
 #include "Scene.h"
 
 class Camera;
-struct ColorData
+
+struct VP
 {
-	DirectX::XMVECTORF32 Color;
+	DirectX::XMFLOAT4X4 VPMatrix;
 };
 
-struct WVP
+struct World
 {
-	DirectX::XMFLOAT4X4 WVPMatrix;
+	DirectX::XMFLOAT4X4 WorldMatrix;
 };
 
 class Renderer
@@ -21,7 +22,7 @@ public:
 	~Renderer() noexcept = default;
 	void Initialize() noexcept;
 	void Begin(Camera* const pCamera) noexcept;
-	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, Camera* const pCamera) noexcept;
+	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
 private:
@@ -35,7 +36,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSO;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pDepthBuffer;
-	DescriptorHeap m_DSVDescriptorHeap;
+	std::unique_ptr<DescriptorHeap> m_pDSVDescriptorHeap;
 
 	D3D12_VIEWPORT m_ViewPort;
 	RECT m_ScissorRect;

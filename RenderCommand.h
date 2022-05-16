@@ -8,11 +8,9 @@ public:
 	[[nodiscard]] static uint64_t SignalFenceFromGPU() noexcept;
 	static void WaitForFenceValue(uint64_t fenceValue) noexcept;
 	static void Flush() noexcept;
-	static void ResetFenceValue() noexcept;
 private:
 	RenderCommand() noexcept = default;
 	~RenderCommand() noexcept = default;
-
 private:
 	static uint64_t s_FenceValue;
 };

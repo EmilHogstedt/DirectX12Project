@@ -7,9 +7,9 @@ void Scene::Initialize()
 
 
 	//Create objects here.
-	AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(0.2f, 0.2f, 0.2f, 1.0f));
+	AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f));
 	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));
-
+	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
 	auto pCommandList = DXCore::GetCommandList();
 	auto pDevice = DXCore::GetDevice();

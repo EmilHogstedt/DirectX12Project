@@ -2,10 +2,12 @@
 class DescriptorHeap
 {
 public:
-	DescriptorHeap() noexcept;
+	DescriptorHeap() = default;
 	DescriptorHeap(uint32_t capacity, D3D12_DESCRIPTOR_HEAP_TYPE heapType, bool shaderVisible) noexcept;
 	~DescriptorHeap() noexcept = default;
+	[[nodiscard]] constexpr Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetInterface() noexcept { return m_pDescriptorHeap; }
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE GetCPUStartHandle() noexcept { return m_CPUAdressStart; }
+	[[nodiscard]] constexpr D3D12_GPU_DESCRIPTOR_HANDLE GetGPUStartHandle() noexcept { return m_GPUAdressStart; }
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentCPUOffsetHandle() noexcept { return m_CPUCurrentAdressOffset; }
 	[[nodiscard]] constexpr uint32_t GetDescriptorTypeSize() noexcept { return m_IncrementSize; }
 	void OffsetCPUAddressPointerBy(uint32_t offset) noexcept;
