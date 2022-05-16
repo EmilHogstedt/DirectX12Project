@@ -3,9 +3,10 @@ struct VS_OUT
 {
     float4 outPositionSS    : SV_Position;
     float4 outColor         : COLOR;
+    float3 outNormal        : NORMAL;
 };
 
 float4 main(in VS_OUT psIn) : SV_TARGET
 {
-    return psIn.outColor;
+    return float4(psIn.outColor.xyz, 1.0f);
 }

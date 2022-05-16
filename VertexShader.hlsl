@@ -9,6 +9,7 @@ struct VS_OUT
 {
     float4 outPositionCS    : SV_Position;
     float4 outColor         : COLOR;
+    float3 outNormal        : NORMAL;
 };
 
 StructuredBuffer<Vertex> vertices : register(t0, space0);
@@ -27,5 +28,6 @@ VS_OUT main(uint vertexID : SV_VertexID)
     VS_OUT vsOut = (VS_OUT)0;
     vsOut.outPositionCS = mul(float4(input.inPositionLS, 1.0f), wvpConstantBuffer.WVPMatrix);
     vsOut.outColor = input.inColor;
+    vsOut.outNormal = input.inNormal;
     return vsOut;
 }

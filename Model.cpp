@@ -59,9 +59,18 @@ void Model::ProcessMesh(aiMesh* mesh)
 		vertex.color.z = 0.0f;
 		vertex.color.w = 1.0f;
 
-		vertex.normal.x = 0.0f;
-		vertex.normal.y = 0.0f;
-		vertex.normal.z = 0.0f;
+		if (mesh->HasNormals())
+		{
+			vertex.normal.x = mesh->mNormals[i].x;
+			vertex.normal.y = mesh->mNormals[i].y;
+			vertex.normal.z = mesh->mNormals[i].z;
+		}
+		else
+		{
+			vertex.normal.x = 0.0f;
+			vertex.normal.y = 0.0f;
+			vertex.normal.z = 0.0f;
+		}
 
 		vertices.push_back(vertex);
 	}
