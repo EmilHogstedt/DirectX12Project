@@ -1,6 +1,7 @@
 #pragma once
 #include "DescriptorHeap.h"
 #include "Triangle.h"
+#include "Scene.h"
 
 class Camera;
 
@@ -21,7 +22,7 @@ public:
 	~Renderer() noexcept = default;
 	void Initialize() noexcept;
 	void Begin(Camera* const pCamera) noexcept;
-	void Submit(float deltaTime) noexcept;
+	void Submit(const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
 private:
@@ -39,5 +40,4 @@ private:
 
 	D3D12_VIEWPORT m_ViewPort;
 	RECT m_ScissorRect;
-	std::unique_ptr<Triangle> m_pTriangle[20];
 };

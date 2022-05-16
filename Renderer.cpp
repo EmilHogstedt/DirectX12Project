@@ -15,30 +15,25 @@ void Renderer::Initialize() noexcept
 
 
 	auto pCommandList = DXCore::GetCommandList();
-
-	auto& memoryManager = MemoryManager::Get();
-	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 200'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
-	memoryManager.AddRangeForDescriptor("ShaderBindables", "TransformsRange", 25'000);
-	memoryManager.CreateNonShaderVisibleDescriptorHeap("Transforms", 25'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	
-	for (uint32_t i{ 0u }; i < 20; ++i)
-	{
-		m_pTriangle[i] = std::make_unique<Triangle>();
-
-		auto m = DirectX::XMLoadFloat4x4(&m_pTriangle[i]->GetWorldMatrix());
-
-		DirectX::XMFLOAT3 translation = { static_cast<float>(i), 0.0f, 0.0f };
-		DirectX::XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
-		DirectX::XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
-		float angleX = 0.0f;
-		float angleY = 0.0f;
-		float angleZ = 0.0f;
-		m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scale)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translation));
-
-		DirectX::XMStoreFloat4x4(&m_pTriangle[i]->GetWorldMatrix(), m);
-
-		m_pTriangle[i]->SetConstantBufferView(std::move(memoryManager.CreateConstantBuffer("Transforms", "ShaderBindables", "TransformsRange", sizeof(World))));
-	}
+	//for (uint32_t i{ 0u }; i < 20; ++i)
+	//{
+	//	m_pTriangle[i] = std::make_unique<Triangle>();
+	//
+	//	auto m = DirectX::XMLoadFloat4x4(&m_pTriangle[i]->GetWorldMatrix());
+	//
+	//	DirectX::XMFLOAT3 translation = { static_cast<float>(i), 0.0f, 0.0f };
+	//	DirectX::XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
+	//	DirectX::XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
+	//	float angleX = 0.0f;
+	//	float angleY = 0.0f;
+	//	float angleZ = 0.0f;
+	//	m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scale)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translation));
+	//
+	//	DirectX::XMStoreFloat4x4(&m_pTriangle[i]->GetWorldMatrix(), m);
+	//
+	//	m_pTriangle[i]->SetConstantBufferView(std::move(memoryManager.CreateConstantBuffer("Transforms", "ShaderBindables", "TransformsRange", sizeof(World))));
+	//}
 
 	HR(pCommandList->Close());
 	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
@@ -87,44 +82,27 @@ void Renderer::Begin(Camera* const pCamera) noexcept
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 4*4, &vpMatrixCBuffer, 0u));
 }
 
-void Renderer::Submit(float deltaTime) noexcept
+void Renderer::Submit(const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept
 {
 	static float speed = 1.0f;
 
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentBackbufferIndex();
 
-	for (uint32_t i{ 0u }; i < 20; ++i)
+	for (auto& modelInstances : vertexObjects)
 	{
-		auto m = DirectX::XMLoadFloat4x4(&m_pTriangle[i]->GetWorldMatrix());
-		DirectX::XMVECTOR scale;
-		DirectX::XMVECTOR rotationQuat;
-		DirectX::XMVECTOR translation;
-		DirectX::XMMatrixDecompose(&scale, &rotationQuat, &translation, m);
+		for (auto& object : modelInstances.second)
+		{
+			object->Update(deltaTime);
 
-		DirectX::XMFLOAT3 scaleF;
-		DirectX::XMStoreFloat3(&scaleF, scale);
-		DirectX::XMFLOAT3 translationF; 
-		DirectX::XMStoreFloat3(&translationF, translation);
-		translationF.x += (speed * deltaTime);
+			auto& cbv = object->GetTransformConstantBufferView();
+			auto gpuHandle = cbv.GpuHandles[index];
 
-		float angleX = 0.0f;
-		float angleY = 0.0f;
-		float angleZ = 0.0f;
-		m = DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&scaleF)) * DirectX::XMMatrixRotationX(angleX) * DirectX::XMMatrixRotationY(angleY) * DirectX::XMMatrixRotationZ(angleZ) * DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&translationF));
-
-		DirectX::XMStoreFloat4x4(&m_pTriangle[i]->GetWorldMatrix(), m);
-		m = DirectX::XMMatrixTranspose(m);
-
-		auto& cbv = m_pTriangle[i]->GetTransformConstantBufferView();
-		MemoryManager::Get().UpdateConstantBuffer(cbv, &m, sizeof(World));
-
-		auto gpuHandle = cbv.GpuHandles[index];
-		STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
-
-		STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, m_pTriangle[i]->GetVertexBuffer()->GetGPUVirtualAddress()));
-		STDCALL(pCommandList->SetGraphicsRootShaderResourceView(2u, m_pTriangle[i]->GetIndexBuffer()->GetGPUVirtualAddress()));
-		STDCALL(pCommandList->DrawInstanced(m_pTriangle[i]->GetNrOfIndices(), 1u, 0u, 0u));
+			STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
+			STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, object->GetModel()->GetVertexBufferGPUAddress()));
+			STDCALL(pCommandList->SetGraphicsRootShaderResourceView(2u, object->GetModel()->GetIndexBufferGPUAddress()));
+			STDCALL(pCommandList->DrawInstanced(object->GetModel()->GetIndexCount(), 1u, 0u, 0u));
+		}
 	}
 }
 

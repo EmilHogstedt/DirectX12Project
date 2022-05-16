@@ -105,8 +105,10 @@
     <ClCompile Include="RenderCommand.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RayTracingManager.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Vertex.cpp" />
+    <ClCompile Include="VertexObject.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -124,9 +126,11 @@
     <ClInclude Include="RenderCommand.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RayTracingManager.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="DescriptorHeapShaderVisible.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Vertex.h" />
+    <ClInclude Include="VertexObject.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

@@ -4,7 +4,7 @@
 #include "Vertex.h"
 
 Triangle::Triangle() noexcept
-	: m_NrOfIndices{3u}
+	: m_NrOfIndices{3u}, m_NrOfVertices{3u}
 {
 	DirectX::XMStoreFloat4x4(&m_WorldMatrix, DirectX::XMMatrixIdentity());
 
