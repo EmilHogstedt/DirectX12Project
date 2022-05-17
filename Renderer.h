@@ -30,6 +30,9 @@ private:
 	void CreateRootSignature() noexcept;
 	void CreatePipelineStateObject() noexcept;
 	void CreateViewportAndScissorRect() noexcept;
+
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filepath, const std::wstring& entryPoint, const std::wstring& target) noexcept;
+	Microsoft::WRL::ComPtr<ID3DBlob> LoadCSO(const std::wstring& filepath) noexcept;
 private:
 	uint32_t m_CurrentBackBufferIndex{0u};
 	uint64_t m_FrameFenceValues[NR_OF_FRAMES];

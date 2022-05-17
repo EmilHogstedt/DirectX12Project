@@ -290,10 +290,14 @@ void Renderer::CreatePipelineStateObject() noexcept
 	streamOutputDescriptor.RasterizedStream = 0u;
 
 	//We need the shaders:
-	Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob = nullptr;
-	COMPILE_FROM_FILE(L"VertexShader.hlsl", "main", "vs_6_5", vertexShaderBlob);
-	Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBlob = nullptr;
-	COMPILE_FROM_FILE(L"PixelShader.hlsl", "main", "ps_6_5", pixelShaderBlob);
+	//First we compile them using the dxc compiler.
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"VertexShader.hlsl", L"main", L"vs_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"PixelShader.hlsl", L"main", L"ps_6_5");
+	//Then the CSO are loaded.
+	//Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob = LoadCSO(L"cso path here");
+	//COMPILE_FROM_FILE(L"VertexShader.hlsl", "main", "vs_6_5", vertexShaderBlob);
+	//Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBlob = LoadCSO(L"cso path here");
+	//COMPILE_FROM_FILE(L"PixelShader.hlsl", "main", "ps_6_5", pixelShaderBlob);
 
 	//We now create the Graphics Pipe line state, the PSO:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDescriptor = { 0 };
@@ -322,6 +326,134 @@ void Renderer::CreatePipelineStateObject() noexcept
 	psoDescriptor.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
 	HR(DXCore::GetDevice()->CreateGraphicsPipelineState(&psoDescriptor, IID_PPV_ARGS(&m_pPSO)));
+}
+
+Microsoft::WRL::ComPtr<IDxcBlob> Renderer::CompileShader(const std::wstring& filepath, const std::wstring& entryPoint, const std::wstring& target) noexcept
+{
+	//Find the file name.
+	uint32_t dotPos = filepath.find(L".", 0);
+	std::wstring name = filepath.substr(0, dotPos);
+
+	//Compiler and utils should be kept in some sort of shader handler ideally.
+	Microsoft::WRL::ComPtr<IDxcCompiler3> pCompiler = nullptr;
+	HR(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(pCompiler.GetAddressOf())));
+	Microsoft::WRL::ComPtr<IDxcUtils> pUtils = nullptr;
+	HR(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pUtils.GetAddressOf())));
+
+	Microsoft::WRL::ComPtr<IDxcBlobEncoding> pSource = nullptr;
+	uint32_t codePage = CP_UTF8;
+	HR(pUtils->LoadFile(filepath.c_str(), &codePage, pSource.GetAddressOf()));
+	
+	//Add the arguments that get sent to the compiler.
+	//https://simoncoenen.com/blog/programming/graphics/DxcCompiling
+	//Shows all arguments
+	std::vector<LPCWSTR> arguments = {};
+
+	//E for entrypoint.
+	arguments.push_back(L"-E");
+	arguments.push_back(entryPoint.c_str());
+
+	//T for target profile (shader version)
+	arguments.push_back(L"-T");
+	arguments.push_back(target.c_str());
+
+	arguments.push_back(DXC_ARG_PACK_MATRIX_COLUMN_MAJOR); //Do we want column major??
+
+#if defined(_DEBUG)
+	arguments.push_back(L"-Od"); //Disable optimizations.
+	arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS);
+	arguments.push_back(DXC_ARG_DEBUG);
+
+	//Write debug information to the given file
+	arguments.push_back(L"-Fd");
+	std::wstring nameDebug = name + L"_debug";
+	arguments.push_back(nameDebug.c_str());
+
+	//Write errors and warnings to the given file
+	arguments.push_back(L"-Fe");
+	std::wstring nameError = name + L"_error";
+	arguments.push_back(nameError.c_str());
+#else
+	arguments.push_back(L"-Vd"); //Disable validation. This maybe should not be here.
+	arguments.push_back(L"-O3"); //Optimization level.
+
+	arguments.push_back(L"-remove-unused-functions");
+	arguments.push_back(L"-remove-unused-globals");
+#endif
+
+	//To be able to strip reflection data and pdb's. They are separated from the shader object, therefore reducing the shader object's size.
+	arguments.push_back(L"-Qstrip_debug");
+	arguments.push_back(L"-Qstrip_reflect");
+
+	//Macros can be defined in strings and sent to the shader if we want.
+	/*
+	for (const std::wstring& define : defines)
+	{
+		arguments.push_back(L"-D");
+		arguments.push_back(define.c_str());
+	}
+	*/
+
+	DxcBuffer sourceBuffer = {};
+	sourceBuffer.Ptr = pSource->GetBufferPointer();
+	sourceBuffer.Size = pSource->GetBufferSize();
+	sourceBuffer.Encoding = 0;
+
+	
+	Microsoft::WRL::ComPtr<IDxcResult> pCompileResult = nullptr;
+	HR(pCompiler->Compile(&sourceBuffer, arguments.data(), (uint32_t)arguments.size(), nullptr, IID_PPV_ARGS(pCompileResult.GetAddressOf())));
+	
+#if defined(_DEBUG)
+	//Handle errors.
+	Microsoft::WRL::ComPtr<IDxcBlobUtf8> pErrors = nullptr;
+	HR(pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pErrors.GetAddressOf()), nullptr));
+	//DBG_ASSERT(pErrors && pErrors->GetStringLength() > 0, (char*)pErrors->GetBufferPointer()); //? Dont know how to print this.
+
+	//Get the Debug data.
+	Microsoft::WRL::ComPtr<IDxcBlob> pDebugData = nullptr;
+	//This contains the path that is baked into the shader object to refer to the part in question.
+	//So if you want to save the PDBs to a separate file, use this name so that Pix will know where to find it.
+	Microsoft::WRL::ComPtr<IDxcBlobUtf16> pDebugDataPath = nullptr;
+	HR(pCompileResult->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(pDebugData.GetAddressOf()), pDebugDataPath.GetAddressOf()));
+	//How do we print the debug data?
+	
+	//Get the reflection data.
+	Microsoft::WRL::ComPtr<IDxcBlob> pReflectionData = nullptr;
+	HR(pCompileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(pReflectionData.GetAddressOf()), nullptr));
+
+	DxcBuffer reflectionBuffer = {};
+	reflectionBuffer.Ptr = pReflectionData->GetBufferPointer();
+	reflectionBuffer.Size = pReflectionData->GetBufferSize();
+	reflectionBuffer.Encoding = 0;
+
+	Microsoft::WRL::ComPtr<ID3D12ShaderReflection> pShaderReflection = nullptr;
+	HR(pUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(pShaderReflection.GetAddressOf())));
+	//How do we use the reflectiondata?
+#endif
+
+	Microsoft::WRL::ComPtr<IDxcBlob> pResultBlob = nullptr;
+	pCompileResult->GetResult(pResultBlob.GetAddressOf());
+
+	return pResultBlob;
+}
+
+//The CSO path get sent in here and then returns the blob.
+Microsoft::WRL::ComPtr<ID3DBlob> Renderer::LoadCSO(const std::wstring& filepath) noexcept
+{
+	std::ifstream file(filepath, std::ios::binary);
+	DBG_ASSERT(file.is_open(), "Error! Could not open CSO file!");
+
+	file.seekg(0, std::ios_base::end);
+	size_t size = static_cast<size_t>(file.tellg());
+	file.seekg(0, std::ios_base::beg);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> toReturn = nullptr;
+	HR(D3DCreateBlob(size, &toReturn));
+
+	file.read(static_cast<char*>(toReturn->GetBufferPointer()), size);
+	file.close();
+
+	return toReturn;
 }
 
 void Renderer::CreateViewportAndScissorRect() noexcept

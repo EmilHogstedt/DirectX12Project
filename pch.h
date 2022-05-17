@@ -15,6 +15,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include <dxc/dxcapi.h>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -28,5 +30,6 @@
 #include <array>
 #include <codecvt>
 #include <locale>
+#include <fstream>
 
 #include "DXHelper.h"
