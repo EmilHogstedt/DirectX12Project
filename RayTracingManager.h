@@ -44,6 +44,7 @@ private:
 	std::unordered_map<std::string, std::vector<std::shared_ptr<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>>> m_AccelerationDescsBottom = {};
 	uint32_t m_BottomBuffers = 0u;
 
+	std::unique_ptr<D3D12_RAYTRACING_INSTANCE_DESC[]> m_InstancingDescs = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pInstanceBufferTop = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pResultBufferTop = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pScratchBufferTop = nullptr;

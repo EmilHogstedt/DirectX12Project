@@ -31,5 +31,6 @@
 #include <codecvt>
 #include <locale>
 #include <fstream>
+#include <random>
 
 #include "DXHelper.h"

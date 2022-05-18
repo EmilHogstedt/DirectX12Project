@@ -6,8 +6,101 @@ void Model::Initialize(const std::string path) noexcept
 	//Use assimp to load the model.
 
 	m_Name = path;
+	if (path == "Tri")
+	{
+		LoadTri();
+	}
+	else if (path == "Rec")
+	{
+		LoadRec();
+	}
+	else
+	{
+		LoadModel();
+	}
+}
 
-	LoadModel();
+void Model::LoadTri() noexcept
+{
+	std::vector<Vertex> vertices = {};
+	std::vector<uint32_t> indices = {};
+
+	//Set up the triangle vertices and indices.
+	Vertex v1 = {};
+	v1.pos = DirectX::XMFLOAT3{ -0.5f, -0.5f, 0.0f };
+	//Random color atm.
+	using t_clock = std::chrono::high_resolution_clock;
+	std::default_random_engine generator(static_cast<UINT>(t_clock::now().time_since_epoch().count()));
+	std::uniform_real_distribution<float> distributionColor(0.0f, 1.0f);
+	v1.color = DirectX::XMFLOAT4{ distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f };
+	v1.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	Vertex v2 = {};
+	v2.pos = DirectX::XMFLOAT3{ 0.0f, 0.5f, 0.0f };
+	v2.color = v1.color;
+	v2.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	Vertex v3 = {};
+	v3.pos = DirectX::XMFLOAT3{ 0.5f, -0.5f, 0.0f };
+	v3.color = v1.color;
+	v3.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	vertices.push_back(v1);
+	vertices.push_back(v2);
+	vertices.push_back(v3);
+
+	indices.push_back(0u);
+	indices.push_back(1u);
+	indices.push_back(2u);
+
+	m_Meshes.push_back(std::make_unique<Mesh>(vertices, indices));
+}
+
+void Model::LoadRec() noexcept
+{
+	std::vector<Vertex> vertices = {};
+	std::vector<uint32_t> indices = {};
+
+	//Set up the rec vertices and indices.
+	Vertex v1 = {};
+	v1.pos = DirectX::XMFLOAT3{ -0.5f, -0.5f, 0.0f };
+	//Random color atm.
+	using t_clock = std::chrono::high_resolution_clock;
+	std::default_random_engine generator(static_cast<UINT>(t_clock::now().time_since_epoch().count()));
+	std::uniform_real_distribution<float> distributionColor(0.0f, 1.0f);
+	v1.color = DirectX::XMFLOAT4{ distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f };
+	v1.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	Vertex v2 = {};
+	v2.pos = DirectX::XMFLOAT3{ -0.5f, 0.5f, 0.0f };
+	v2.color = v1.color;
+	v2.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	Vertex v3 = {};
+	v3.pos = DirectX::XMFLOAT3{ 0.5f, 0.5f, 0.0f };
+	v3.color = v1.color;
+	v3.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	Vertex v4 = {};
+	v4.pos = DirectX::XMFLOAT3{ 0.5f, -0.5f, 0.0f };
+	v4.color = v1.color;
+	v4.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+
+	vertices.push_back(v1);
+	vertices.push_back(v2);
+	vertices.push_back(v3);
+	vertices.push_back(v4);
+
+	//First tri
+	indices.push_back(0u);
+	indices.push_back(1u);
+	indices.push_back(2u);
+	//Second tri
+	indices.push_back(0u);
+	indices.push_back(2u);
+	indices.push_back(3u);
+
+	m_Meshes.push_back(std::make_unique<Mesh>(vertices, indices));
 }
 
 void Model::LoadModel() noexcept

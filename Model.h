@@ -16,6 +16,8 @@ public:
 
 	const std::vector<std::unique_ptr<Mesh>>& GetMeshes() noexcept { return m_Meshes; }
 private:
+	void LoadTri() noexcept;
+	void LoadRec() noexcept;
 	void LoadModel() noexcept;
 	void ProcessNode(aiNode* node, const aiScene* scene) noexcept;
 	void ProcessMesh(aiMesh* mesh);

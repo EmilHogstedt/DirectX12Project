@@ -357,7 +357,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> Renderer::CompileShader(const std::wstring& fil
 	arguments.push_back(L"-T");
 	arguments.push_back(target.c_str());
 
-	arguments.push_back(DXC_ARG_PACK_MATRIX_COLUMN_MAJOR); //Do we want column major??
+	arguments.push_back(DXC_ARG_PACK_MATRIX_COLUMN_MAJOR);
 
 #if defined(_DEBUG)
 	arguments.push_back(L"-Od"); //Disable optimizations.
@@ -374,11 +374,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> Renderer::CompileShader(const std::wstring& fil
 	std::wstring nameError = name + L"_error";
 	arguments.push_back(nameError.c_str());
 #else
-	arguments.push_back(L"-Vd"); //Disable validation. This maybe should not be here.
 	arguments.push_back(L"-O3"); //Optimization level.
-
-	arguments.push_back(L"-remove-unused-functions");
-	arguments.push_back(L"-remove-unused-globals");
 #endif
 
 	//To be able to strip reflection data and pdb's. They are separated from the shader object, therefore reducing the shader object's size.

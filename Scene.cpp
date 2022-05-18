@@ -6,9 +6,13 @@ void Scene::Initialize()
 	m_pRayTracingManager = std::make_unique<RayTracingManager>();
 
 	//Create objects here.
+	AddVertexObject("Tri", DirectX::XMVectorSet(-10.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(10.0f, 10.0f, 10.0f, 1.0f));
+	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 100.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(100.0f, 100.0f, 100.0f, 100.0f));
 	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f));
 	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));
 	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));
+	
+	
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
 	auto pCommandList = DXCore::GetCommandList();
 	auto pDevice = DXCore::GetDevice();
