@@ -32,5 +32,6 @@
 #include <locale>
 #include <fstream>
 #include <random>
-
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "DXHelper.h"

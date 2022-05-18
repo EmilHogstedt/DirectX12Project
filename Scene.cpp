@@ -6,11 +6,11 @@ void Scene::Initialize()
 	m_pRayTracingManager = std::make_unique<RayTracingManager>();
 
 	//Create objects here.
-	AddVertexObject("Tri", DirectX::XMVectorSet(-10.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(10.0f, 10.0f, 10.0f, 1.0f));
-	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 100.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(100.0f, 100.0f, 100.0f, 100.0f));
-	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f));
-	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));
-	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f));
+	AddVertexObject("Tri", DirectX::XMVectorSet(-10.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 10.0f, RESIZE);
+	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 100.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 100.0f, MOVEBACKANDFORTH);
+	AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.01f, SPIN);
+	AddVertexObject("Models/wolf.obj", DirectX::XMVectorSet(-50.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.05f, SPIN);
+	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 2.0f, SPIN);
 	
 	
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
@@ -35,7 +35,7 @@ void Scene::Initialize()
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 }
 
-void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, DirectX::XMVECTOR scale)
+void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType)
 {	
 	std::shared_ptr<Model> tempModel = nullptr;
 	bool newModel = false;
@@ -64,7 +64,8 @@ void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, Direc
 		std::move(tempModel),
 		pos,
 		rot,
-		scale
+		scale,
+		updateType
 	);
 	
 	if (newModel)
