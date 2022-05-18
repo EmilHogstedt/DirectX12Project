@@ -172,7 +172,7 @@ void RayTracingManager::BuildTopAcceleration(
 			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
 			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
 			{
-				const DirectX::XMFLOAT4X4& objectTransform = object->GetTransform();
+				DirectX::XMFLOAT4X4 objectTransform = object->GetTransform();
 				//Change the transform to use the object's transform
 				//First row.
 				m_InstancingDescs[index].Transform[0][0] = objectTransform._11;
