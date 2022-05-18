@@ -78,6 +78,9 @@
     <ClCompile Include="DescriptorHeapNonShaderVisible.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Profiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -138,6 +141,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DescriptorHeapNonShaderVisible.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
