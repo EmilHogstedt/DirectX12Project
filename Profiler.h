@@ -15,7 +15,6 @@ public:
 		  m_FunctionToCall{ func },
 		  m_StartTime{ std::chrono::high_resolution_clock::now() }
 	{
-
 	}
 	~Profiler()
 	{
@@ -39,18 +38,34 @@ private:
 struct ProfilerManager
 {
 	static std::vector<ProfilerData> ProfilerDatas;
+	static std::vector<ProfilerData> AllProfilerDatas;
+	static double m_CurrentAverageDuration;
+	static double m_AverageDurationSinceStart;
+	static uint32_t m_MaxMeasurements;
+	static uint32_t m_CurrentMeasureNr;
 	static void Clear() noexcept
 	{
-		if (!ProfilerDatas.empty())
-		{
-			double averageDuration{ 0.0f };
-			for (uint32_t i{ 0u }; i < ProfilerDatas.size(); ++i)
-			{
-				averageDuration += ProfilerDatas[i].Duration;
-			}
-			averageDuration /= ProfilerDatas.size();
-			std::cout << std::setprecision(5) << averageDuration << " ms\n";
-			ProfilerDatas.clear();
-		}
+		ProfilerDatas.clear();
+		AllProfilerDatas.clear();
 	}
+	static std::pair<double, double> Report() noexcept
+	{
+		m_CurrentAverageDuration = 0.0f;
+		m_AverageDurationSinceStart = 0.0f;
+		for (uint32_t i{ 0u }; i < ProfilerDatas.size(); ++i)
+		{
+			m_CurrentAverageDuration += ProfilerDatas[i].Duration;
+			AllProfilerDatas.emplace_back(ProfilerDatas[i]);
+		}
+		for (uint32_t i{ 0u }; i < AllProfilerDatas.size(); ++i)
+		{
+			m_AverageDurationSinceStart += AllProfilerDatas[i].Duration;
+		}
+		m_CurrentAverageDuration /= ProfilerDatas.size();
+		m_AverageDurationSinceStart /= AllProfilerDatas.size();
+		m_CurrentMeasureNr++;
+		ProfilerDatas.clear();
+		return std::make_pair(m_CurrentAverageDuration, m_AverageDurationSinceStart);
+	}
+	[[nodiscard]] static constexpr bool IsValid() noexcept { return !ProfilerDatas.empty() && (m_CurrentMeasureNr != m_MaxMeasurements); }
 };

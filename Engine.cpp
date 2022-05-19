@@ -41,8 +41,7 @@ void Engine::Run() noexcept
 	while (s_Window.IsRunning())
 	{
 		{
-			if (startProfiling)
-				Profiler profiler(__FUNCTION__, [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
+			Profiler profiler("Render loop", [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
 
 			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
 			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
@@ -50,17 +49,10 @@ void Engine::Run() noexcept
 			{
 				ImGuiManager::Begin();
 
-				ImGui::Begin("Miscellaneous");
-				static float cameraSpeed = 40.0f;
-				if (ImGui::DragFloat("Camera Speed", &cameraSpeed, 1.0f, 1.0f, 100.0f))
-					m_pCamera->SetCameraSpeed(cameraSpeed);
-				ImGui::Text("Frame rate: %d", currentFramesPerSecond);
-				ImGui::Text("Frame time: %.5f ms", currentFrameTime);
-				ImGui::End();
+				RenderMiscWindow(currentFramesPerSecond, currentFrameTime);
 
 				ImGuiManager::End();
 			}
-
 			m_pRenderer->End();
 		}
 		m_pCamera->Update(deltaTime);
@@ -89,7 +81,12 @@ void Engine::Run() noexcept
 		}
 		else if (frameCount == 2'000 && startProfiling == true)
 		{
-			ProfilerManager::Clear();
+			if (ProfilerManager::IsValid())
+			{
+				auto [currentAverage, averageSinceStart] = ProfilerManager::Report();
+				m_CurrentAverageRenderTime = currentAverage;
+				m_AverageRenderTimeSinceStart = averageSinceStart;
+			}
 			frameCount = 0u;
 		}
 
@@ -105,4 +102,20 @@ void Engine::CreateConsole() noexcept
 	freopen("CONIN$", "r", stdin);
 	freopen("CONOUT$", "w", stdout);
 	freopen("CONOUT$", "w", stderr);
+}
+
+void Engine::RenderMiscWindow(uint32_t currentFramesPerSecond, float currentFrameTime) noexcept
+{
+	ImGui::Begin("Miscellaneous");
+	static float cameraSpeed = 40.0f;
+	if (ImGui::DragFloat("Camera Speed", &cameraSpeed, 1.0f, 1.0f, 100.0f))
+		m_pCamera->SetCameraSpeed(cameraSpeed);
+	ImGui::Text("Frame rate: %d", currentFramesPerSecond);
+	ImGui::Text("Frame time: %.5f ms", currentFrameTime);
+	ImGui::Text("Render pass time (Average): %.5f ms", m_CurrentAverageRenderTime);
+	ImGui::Text("Render pass time (Total summed average): %.5f ms", m_AverageRenderTimeSinceStart);
+	ImGui::Text("Mesh Count: %d", m_pScene->GetTotalNrOfMeshes());
+	ImGui::Text("Vertex Count: %d", m_pScene->GetTotalNrOfVertices());
+	ImGui::Text("Index Count: %d", m_pScene->GetTotalNrOfIndices());
+	ImGui::End();
 }
