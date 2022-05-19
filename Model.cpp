@@ -28,22 +28,15 @@ void Model::LoadTri() noexcept
 	//Set up the triangle vertices and indices.
 	Vertex v1 = {};
 	v1.pos = DirectX::XMFLOAT3{ -0.5f, -0.5f, 0.0f };
-	//Random color atm.
-	using t_clock = std::chrono::high_resolution_clock;
-	std::default_random_engine generator(static_cast<UINT>(t_clock::now().time_since_epoch().count()));
-	std::uniform_real_distribution<float> distributionColor(0.0f, 1.0f);
-	v1.color = DirectX::XMFLOAT4{ distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f };
-	v1.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v1.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	Vertex v2 = {};
 	v2.pos = DirectX::XMFLOAT3{ 0.0f, 0.5f, 0.0f };
-	v2.color = v1.color;
-	v2.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v2.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	Vertex v3 = {};
 	v3.pos = DirectX::XMFLOAT3{ 0.5f, -0.5f, 0.0f };
-	v3.color = v1.color;
-	v3.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v3.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -68,23 +61,19 @@ void Model::LoadRec() noexcept
 	using t_clock = std::chrono::high_resolution_clock;
 	std::default_random_engine generator(static_cast<UINT>(t_clock::now().time_since_epoch().count()));
 	std::uniform_real_distribution<float> distributionColor(0.0f, 1.0f);
-	v1.color = DirectX::XMFLOAT4{ distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f };
-	v1.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v1.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	Vertex v2 = {};
 	v2.pos = DirectX::XMFLOAT3{ -0.5f, 0.5f, 0.0f };
-	v2.color = v1.color;
-	v2.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v2.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	Vertex v3 = {};
 	v3.pos = DirectX::XMFLOAT3{ 0.5f, 0.5f, 0.0f };
-	v3.color = v1.color;
-	v3.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v3.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	Vertex v4 = {};
 	v4.pos = DirectX::XMFLOAT3{ 0.5f, -0.5f, 0.0f };
-	v4.color = v1.color;
-	v4.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, 1.0f };
+	v4.normal = DirectX::XMFLOAT3{ 0.0f, 0.0f, -1.0f };
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -146,11 +135,6 @@ void Model::ProcessMesh(aiMesh* mesh)
 			
 		}
 		*/
-		//Setting color to red.
-		vertex.color.x = 1.0f;
-		vertex.color.y = 0.0f;
-		vertex.color.z = 0.0f;
-		vertex.color.w = 1.0f;
 
 		if (mesh->HasNormals())
 		{

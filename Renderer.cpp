@@ -71,6 +71,9 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	vpInverseCBuffer.elementsP = DirectX::XMFLOAT2(pCamera->GetElement1PMatrix(), pCamera->GetElement2PMatrix());
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4 + 2, &vpInverseCBuffer, 0u));
 
+	auto cameraPos = DirectX::XMLoadFloat3(&(pCamera->GetPosition()));
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(7u, 3, &cameraPos, 0u));
+
 	//Raytracing accelerationstructure.
 	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
 }
@@ -86,6 +89,9 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 	{
 		for (auto& object : modelInstances.second)
 		{
+			auto objectColor = DirectX::XMLoadFloat4(&(object->GetColor()));
+			STDCALL(pCommandList->SetGraphicsRoot32BitConstants(6u, 4, &objectColor, 0u));
+
 			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
 			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
 			{
@@ -234,6 +240,22 @@ void Renderer::CreateRootSignature() noexcept
 	vpInversePS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters.push_back(vpInversePS);
 
+	D3D12_ROOT_PARAMETER objectColorPS = {};
+	objectColorPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	objectColorPS.Constants.Num32BitValues = 4;
+	objectColorPS.Constants.ShaderRegister = 1u;
+	objectColorPS.Constants.RegisterSpace = 1u;
+	objectColorPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters.push_back(objectColorPS);
+	
+	D3D12_ROOT_PARAMETER cameraPS = {};
+	cameraPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	cameraPS.Constants.Num32BitValues = 3;
+	cameraPS.Constants.ShaderRegister = 2u;
+	cameraPS.Constants.RegisterSpace = 1u;
+	cameraPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters.push_back(cameraPS);
+	
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDescriptor = {};
 	rootSignatureDescriptor.NumParameters = static_cast<UINT>(rootParameters.size());
 	rootSignatureDescriptor.pParameters = rootParameters.data();
@@ -378,7 +400,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> Renderer::CompileShader(const std::wstring& fil
 
 #if defined(_DEBUG)
 	arguments.push_back(L"-Od"); //Disable optimizations.
-	arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS);
+	//arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS);
 	arguments.push_back(DXC_ARG_DEBUG);
 
 	//Write debug information to the given file

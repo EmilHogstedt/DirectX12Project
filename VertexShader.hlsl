@@ -1,14 +1,13 @@
 struct Vertex
 {
     float3 inPositionLS;
-    float4 inColor;
     float3 inNormal;
 };
 
 struct VS_OUT
 {
     float4 outPositionCS    : SV_Position;
-    float4 outColor         : COLOR;
+    float4 outPosWorld      : POSWORLD;
     float3 outNormal        : NORMAL;
 };
 
@@ -31,9 +30,10 @@ VS_OUT main(uint vertexID : SV_VertexID)
 {
     Vertex input = vertices[indices[vertexID]];
     VS_OUT vsOut = (VS_OUT)0;
-    vsOut.outPositionCS = mul(float4(input.inPositionLS, 1.0f), worldMatrix);
-    vsOut.outPositionCS = mul(vsOut.outPositionCS, vpConstantBuffer.VPMatrix);
-    vsOut.outColor = input.inColor;
-    vsOut.outNormal = input.inNormal;
+    vsOut.outPosWorld = mul(float4(input.inPositionLS, 1.0f), worldMatrix);
+    
+    vsOut.outPositionCS = mul(vsOut.outPosWorld, vpConstantBuffer.VPMatrix);
+    vsOut.outNormal = normalize(mul(float4(normalize(input.inNormal), 0.0f), worldMatrix).xyz);
+    //vsOut.outNormal = normalize(input.inNormal);
     return vsOut;
 }

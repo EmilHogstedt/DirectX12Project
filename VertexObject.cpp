@@ -1,12 +1,20 @@
 #include "pch.h"
 #include "VertexObject.h"
 
-void VertexObject::Initialize(std::shared_ptr<Model> objectModel, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType)
+void VertexObject::Initialize(
+	std::shared_ptr<Model> objectModel,
+	DirectX::XMVECTOR pos,
+	DirectX::XMVECTOR rot,
+	float scale,
+	UpdateType updateType,
+	DirectX::XMFLOAT4 color
+)
 {
 	m_pModel = objectModel;
 	m_UpdateType = updateType;
 	m_Scale = scale;
-	
+	m_Color = color;
+
 	using t_clock = std::chrono::high_resolution_clock;
 	std::default_random_engine generator(static_cast<UINT>(t_clock::now().time_since_epoch().count()));
 	std::uniform_real_distribution<float> distributionColor(0.0f, 180.0f);

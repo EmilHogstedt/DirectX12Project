@@ -15,7 +15,14 @@ public:
 	const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& GetCulledVertexObjects() const { return m_Objects; }
 	D3D12_GPU_VIRTUAL_ADDRESS GetAccelerationStructureGPUAddress() const { return m_pRayTracingManager->GetTopLevelAccelerationStructure(); }
 private:
-	void AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType);
+	void AddVertexObject(
+		const std::string path,
+		DirectX::XMVECTOR pos,
+		DirectX::XMVECTOR rot,
+		float scale,
+		UpdateType updateType,
+		DirectX::XMFLOAT4 color
+	);
 private:
 	std::unique_ptr<RayTracingManager> m_pRayTracingManager = nullptr;
 

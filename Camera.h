@@ -11,6 +11,7 @@ public:
 	[[nodiscard]] constexpr DirectX::XMFLOAT4X4& GetVPMatrix() noexcept { return m_ViewProjectionMatrix; }
 	[[nodiscard]] float GetElement1PMatrix() noexcept { return m_ProjectionMatrix._11; }
 	[[nodiscard]] float GetElement2PMatrix() noexcept { return m_ProjectionMatrix._22; }
+	[[nodiscard]] constexpr DirectX::XMFLOAT3& GetPosition() noexcept { return m_Position; }
 	void OnMouseMove() noexcept;
 private:
 	DirectX::XMFLOAT3 m_Position;
