@@ -10,6 +10,12 @@ struct VP
 	DirectX::XMFLOAT4X4 VPMatrix;
 };
 
+struct InverseVP
+{
+	DirectX::XMFLOAT4X4 InverseVPMatrix;
+	DirectX::XMFLOAT2 elementsP;
+};
+
 struct World
 {
 	DirectX::XMFLOAT4X4 WorldMatrix;

@@ -62,13 +62,14 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	DirectX::XMStoreFloat4x4(&vpMatrixCBuffer.VPMatrix, vpMatrix);
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 4*4, &vpMatrixCBuffer, 0u));
 
-	static VP vpInverseCBuffer;
+	static InverseVP vpInverseCBuffer;
 	auto vpInverse = DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
 	DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(vpInverse);
 	vpInverse = DirectX::XMMatrixInverse(&det, vpInverse);
-	vpInverse = DirectX::XMMatrixTranspose(vpInverse);
-	DirectX::XMStoreFloat4x4(&vpInverseCBuffer.VPMatrix, vpInverse);
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4, &vpInverseCBuffer, 0u));
+	vpInverse = DirectX::XMMatrixTranspose(vpInverse); //Is this needed?
+	DirectX::XMStoreFloat4x4(&vpInverseCBuffer.InverseVPMatrix, vpInverse);
+	vpInverseCBuffer.elementsP = DirectX::XMFLOAT2(pCamera->GetElement1PMatrix(), pCamera->GetElement2PMatrix());
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4 + 2, &vpInverseCBuffer, 0u));
 
 	//Raytracing accelerationstructure.
 	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
@@ -227,7 +228,7 @@ void Renderer::CreateRootSignature() noexcept
 
 	D3D12_ROOT_PARAMETER vpInversePS = {};
 	vpInversePS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	vpInversePS.Constants.Num32BitValues = 4 * 4;
+	vpInversePS.Constants.Num32BitValues = 4 * 4 + 2; //The matrix + the 2 projection matrix elements.
 	vpInversePS.Constants.ShaderRegister = 0u;
 	vpInversePS.Constants.RegisterSpace = 1u;
 	vpInversePS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;

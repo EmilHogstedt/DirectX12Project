@@ -9,6 +9,8 @@ public:
 	void RecalculateViewProjectionMatrix() noexcept;
 	void Update(const float deltaTime) noexcept;
 	[[nodiscard]] constexpr DirectX::XMFLOAT4X4& GetVPMatrix() noexcept { return m_ViewProjectionMatrix; }
+	[[nodiscard]] float GetElement1PMatrix() noexcept { return m_ProjectionMatrix._11; }
+	[[nodiscard]] float GetElement2PMatrix() noexcept { return m_ProjectionMatrix._22; }
 	void OnMouseMove() noexcept;
 private:
 	DirectX::XMFLOAT3 m_Position;

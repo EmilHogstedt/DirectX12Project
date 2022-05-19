@@ -8,6 +8,7 @@ struct VS_OUT
 struct VPInverseBuffer
 {
     matrix VPInverseMatrix;
+    float2 elementsP;
 };
 
 ConstantBuffer<VPInverseBuffer> vpInverseBuffer : register(b0, space1);
@@ -16,6 +17,7 @@ RaytracingAccelerationStructure scene : register(t0, space1);
 
 float4 main(in VS_OUT psIn) : SV_TARGET
 {
+    /*
     RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
 
     RayDesc ray;
@@ -32,6 +34,6 @@ float4 main(in VS_OUT psIn) : SV_TARGET
     {
         return float4(1.0f, 1.0f, 1.0f, 1.0f);
     }
-
+    */
     return float4(psIn.outColor.xyz, 1.0f);
 }
