@@ -39,8 +39,12 @@ void RenderCommand::WaitForFenceValue(uint64_t fenceValue) noexcept
 	if (DXCore::GetFence()->GetCompletedValue() < fenceValue)
 	{
 		HR(DXCore::GetFence()->SetEventOnCompletion(fenceValue, DXCore::GetFenceEvent()));
+#if defined (_DEBUG) 
 		DWORD retVal{ ::WaitForSingleObject(DXCore::GetFenceEvent(), INFINITE) };
 		DBG_ASSERT(retVal != WAIT_FAILED, "Failed to wait for fence event completion.");
+#else
+		::WaitForSingleObject(DXCore::GetFenceEvent(), INFINITE);
+#endif
 	}
 }
 
