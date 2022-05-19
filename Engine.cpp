@@ -2,12 +2,14 @@
 #include "Engine.h"
 #include "DXCore.h"
 #include "Window.h"
+#include "ImGuiManager.h"
 
 void Engine::Initialize(const std::wstring& applicationName) noexcept
 {
 	CreateConsole();
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
+	ImGuiManager::Initialize();
 
 	auto& memoryManager = MemoryManager::Get();
 	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 200'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
@@ -31,6 +33,10 @@ void Engine::Run() noexcept
 	float deltaTime = 0.0f;
 	auto lastFrameEnd = std::chrono::system_clock::now();
 	uint64_t frameCount = 0u;
+	uint64_t framesPerSecond = 0u;
+	uint64_t currentFramesPerSecond = 0u;
+	float currentFrameTime = 0.0f;
+	float secondTracker = 0.0f;
 	bool startProfiling = false;
 	while (s_Window.IsRunning())
 	{
@@ -40,6 +46,21 @@ void Engine::Run() noexcept
 
 			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
 			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
+
+			{
+				ImGuiManager::Begin();
+
+				ImGui::Begin("Miscellaneous");
+				static float cameraSpeed = 40.0f;
+				if (ImGui::DragFloat("Camera Speed", &cameraSpeed, 1.0f, 1.0f, 100.0f))
+					m_pCamera->SetCameraSpeed(cameraSpeed);
+				ImGui::Text("Frame rate: %d", currentFramesPerSecond);
+				ImGui::Text("Frame time: %.5f ms", currentFrameTime);
+				ImGui::End();
+
+				ImGuiManager::End();
+			}
+
 			m_pRenderer->End();
 		}
 		m_pCamera->Update(deltaTime);
@@ -47,8 +68,18 @@ void Engine::Run() noexcept
 
 		auto currentFrameEnd = std::chrono::system_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(currentFrameEnd - lastFrameEnd).count();
-		deltaTime = elapsed / 1'000'000.0f;
+		deltaTime = static_cast<float>(elapsed) / 1'000'000.0f;
+		currentFrameTime = static_cast<float>(elapsed) / 1'000;
 		lastFrameEnd = currentFrameEnd;
+
+		secondTracker += deltaTime;
+		if (secondTracker >= 1.0f)
+		{
+			secondTracker = 0.0f;
+			currentFramesPerSecond = framesPerSecond;
+			framesPerSecond = 0;
+		}
+
 
 		frameCount++;
 		if (frameCount == 2000 && startProfiling == false)
@@ -61,8 +92,11 @@ void Engine::Run() noexcept
 			ProfilerManager::Clear();
 			frameCount = 0u;
 		}
+
+		framesPerSecond++;
 	}
 	m_pRenderer->OnShutDown();
+	ImGuiManager::OnShutDown();
 }
 
 void Engine::CreateConsole() noexcept
