@@ -2,13 +2,21 @@
 #include "Model.h"
 #include "MemoryManager.h"
 
+enum UpdateType
+{
+	NONE = 0,
+	SPIN,
+	RESIZE,
+	MOVEBACKANDFORTH
+};
+
 class VertexObject
 {
 public:
 	VertexObject() noexcept = default;
 	~VertexObject() noexcept = default;
 
-	void Initialize(std::shared_ptr<Model> objectModel, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, DirectX::XMVECTOR scale);
+	void Initialize(std::shared_ptr<Model> objectModel, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType);
 
 	void Update(float deltaTime);
 
@@ -22,4 +30,10 @@ private:
 	DirectX::XMFLOAT4X4 m_Transform = {};
 	ConstantBufferView m_TransformConstantBufferView;
 	std::shared_ptr<Model> m_pModel = nullptr;
+	UpdateType m_UpdateType = SPIN;
+	bool resizeFlag = false;
+
+	float m_Scale = 1.0f;
+	float m_ScaleAngle = 0.0f;
+	float m_OriginalX = 0.0f;
 };

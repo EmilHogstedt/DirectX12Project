@@ -37,12 +37,11 @@ void Engine::Run() noexcept
 		{
 			if (startProfiling)
 				Profiler profiler(__FUNCTION__, [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
-			
-			m_pRenderer->Begin(m_pCamera.get());
+
+			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
 			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
 			m_pRenderer->End();
 		}
-		
 		m_pCamera->Update(deltaTime);
 		s_Window.OnUpdate();
 

@@ -21,8 +21,8 @@ public:
 	Renderer() noexcept = default;
 	~Renderer() noexcept = default;
 	void Initialize() noexcept;
-	void Begin(Camera* const pCamera) noexcept;
-	void Submit(const std::unordered_map<std::wstring, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
+	void Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept;
+	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
 private:
@@ -30,6 +30,9 @@ private:
 	void CreateRootSignature() noexcept;
 	void CreatePipelineStateObject() noexcept;
 	void CreateViewportAndScissorRect() noexcept;
+
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filepath, const std::wstring& entryPoint, const std::wstring& target) noexcept;
+	Microsoft::WRL::ComPtr<ID3DBlob> LoadCSO(const std::wstring& filepath) noexcept;
 private:
 	uint32_t m_CurrentBackBufferIndex{0u};
 	uint64_t m_FrameFenceValues[NR_OF_FRAMES];

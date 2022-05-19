@@ -216,7 +216,8 @@ private:
 };
 #endif
 
-#define NR_OF_FRAMES 2
+#define NR_OF_FRAMES 3
+#define NR_OF_BACKBUFFERS 2 
 
 struct ConstantBufferView
 {

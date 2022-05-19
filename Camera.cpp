@@ -22,7 +22,7 @@ Camera::Camera(const DirectX::XMFLOAT3& position, const uint32_t width, const ui
 
 	float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
-	DirectX::XMMATRIX projectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), aspectRatio, 0.1f, 100.0f);
+	DirectX::XMMATRIX projectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), aspectRatio, 0.1f, 10000.0f);
 
 	DirectX::XMStoreFloat4x4(&m_ViewProjectionMatrix, viewMatrix * projectionMatrix);
 	DirectX::XMStoreFloat4x4(&m_ViewMatrix, viewMatrix);

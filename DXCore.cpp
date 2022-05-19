@@ -25,7 +25,7 @@ void DXCore::Initialize() noexcept
 	InitializeCommandInterfaces();
 	InitializeFence();
 	InitializeFenceEvent();
-	CreateUploadHeapAndBuffer(100'000'000);
+	CreateUploadHeapAndBuffer(1'000'000'000);
 }
 
 void DXCore::CreateDebugAndGPUValidationLayer() noexcept
@@ -129,7 +129,7 @@ void DXCore::CheckSupportForDXR(Microsoft::WRL::ComPtr<ID3D12Device> pDevice) no
 	D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureData = {};
 	HR(pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureData, sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS5)));
 	//Change to 1.1 to enable inline Ray tracing: 
-	//DBG_ASSERT(featureData.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0, "Ray Tracing 1.1 is not supported on current device");
+	//DBG_ASSERT(featureData.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1, "Ray Tracing 1.1 is not supported on current device");
 }
 
 void DXCore::CreateUploadHeapAndBuffer(uint32_t bufferSize) noexcept
