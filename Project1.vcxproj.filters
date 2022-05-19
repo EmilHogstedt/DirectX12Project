@@ -84,6 +84,30 @@
     <ClCompile Include="Profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui_draw.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui_impl_dx12.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui_impl_win32.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui_tables.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui_widgets.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Includes\imgui\imgui_demo.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -150,6 +174,33 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Profiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imconfig.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imgui.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imgui_impl_dx12.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imgui_impl_win32.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imgui_internal.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imstb_rectpack.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imstb_textedit.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\imgui\imstb_truetype.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,11 +2,18 @@
 #include "Window.h"
 #include "DXCore.h"
 #include "Mouse.h"
+#include "imgui_impl_win32.h"
 
 Window Window::s_Instance{};
 
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT CALLBACK WindowProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(windowHandle, message, wParam, lParam))
+		return true;
+
 	switch (message)
 	{
 	case WM_CLOSE:
@@ -54,6 +61,18 @@ LRESULT CALLBACK WindowProc(HWND windowHandle, UINT message, WPARAM wParam, LPAR
 		{
 			Mouse::OnRawDelta(ri.data.mouse.lLastX, ri.data.mouse.lLastY);
 		}
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		while (::ShowCursor(false) > 0);
+		Mouse::OnRightMouseButtonPressed();
+		break;
+	}
+	case WM_RBUTTONUP:
+	{
+		while (::ShowCursor(true) < 0);
+		Mouse::OnRightMouseButtonReleased();
 		break;
 	}
 	}
@@ -129,7 +148,8 @@ void Window::CreateWindow(const std::wstring& applicationName) noexcept
 	if (RegisterRawInputDevices(&rawInputDevice, 1u, sizeof(rawInputDevice)) == FALSE)
 		DBG_ASSERT(false, "Failed to register mouse device for raw input.")
 
-	while (::ShowCursor(false) >= 0);
+	//while (::ShowCursor(false) > 0);
+	//::SetCursor(NULL);
 
 	::ShowWindow(m_WindowHandle, SW_SHOWNORMAL);
 }

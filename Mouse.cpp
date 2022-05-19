@@ -3,6 +3,7 @@
 
 int Mouse::m_sDeltaX{ 0 };
 int Mouse::m_sDeltaY{ 0 };
+bool Mouse::m_RightButtonPressed{ false };
 
 void Mouse::OnRawDelta(const int dx, const int dy) noexcept
 {
@@ -18,4 +19,14 @@ const std::pair<int, int> Mouse::GetMovementDelta() noexcept
 	m_sDeltaX = 0;
 	m_sDeltaY = 0;
 	return std::pair<int, int>(returnX, returnY);
+}
+
+void Mouse::OnRightMouseButtonPressed() noexcept
+{
+	m_RightButtonPressed = true;
+}
+
+void Mouse::OnRightMouseButtonReleased() noexcept
+{
+	m_RightButtonPressed = false;
 }

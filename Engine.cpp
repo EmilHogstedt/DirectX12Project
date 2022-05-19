@@ -2,12 +2,14 @@
 #include "Engine.h"
 #include "DXCore.h"
 #include "Window.h"
+#include "ImGuiManager.h"
 
 void Engine::Initialize(const std::wstring& applicationName) noexcept
 {
 	CreateConsole();
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
+	ImGuiManager::Initialize();
 
 	auto& memoryManager = MemoryManager::Get();
 	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 200'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
@@ -31,6 +33,7 @@ void Engine::Run() noexcept
 	float deltaTime = 0.0f;
 	auto lastFrameEnd = std::chrono::system_clock::now();
 	uint64_t frameCount = 0u;
+	//uint32_t framesPerSecond = 0u;;
 	bool startProfiling = false;
 	while (s_Window.IsRunning())
 	{
@@ -40,6 +43,18 @@ void Engine::Run() noexcept
 
 			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
 			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
+
+			//IMGUI-SCOPE: Do anything WITHIN Begin and End!
+			{
+				ImGuiManager::Begin();
+
+				ImGui::Begin("Performance");
+				ImGui::Text("Frame time: %f ms", deltaTime * 1'000);
+
+				ImGui::End();
+
+				ImGuiManager::End();
+			}
 			m_pRenderer->End();
 		}
 		m_pCamera->Update(deltaTime);
@@ -63,6 +78,7 @@ void Engine::Run() noexcept
 		}
 	}
 	m_pRenderer->OnShutDown();
+	ImGuiManager::OnShutDown();
 }
 
 void Engine::CreateConsole() noexcept

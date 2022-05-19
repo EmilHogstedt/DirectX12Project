@@ -42,47 +42,50 @@ void Camera::RecalculateViewProjectionMatrix() noexcept
 
 void Camera::Update(const float deltaTime) noexcept
 {
-	DirectX::XMVECTOR position = DirectX::XMLoadFloat3(&m_Position);
-	if (Keyboard::IsKeyDown(KEY::W))
+	if (Mouse::IsRightButtonPressed())
 	{
-		DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
-		frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorAdd(position, frontVector);
-	}
-	else if (Keyboard::IsKeyDown(KEY::S))
-	{
-		DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
-		frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorSubtract(position, frontVector);
-	}
-	if (Keyboard::IsKeyDown(KEY::D))
-	{
-		DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
-		rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorAdd(position, rightVector);
-	}
-	else if (Keyboard::IsKeyDown(KEY::A))
-	{
-		DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
-		rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorSubtract(position, rightVector);
-	}
-	if (Keyboard::IsKeyDown(KEY::Q))
-	{
-		DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
-		upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorSubtract(position, upVector);
-	}
-	else if (Keyboard::IsKeyDown(KEY::E))
-	{
-		DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
-		upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorAdd(position, upVector);
-	}
-	DirectX::XMStoreFloat3(&m_Position, position);
-	RecalculateViewProjectionMatrix();
+		DirectX::XMVECTOR position = DirectX::XMLoadFloat3(&m_Position);
+		if (Keyboard::IsKeyDown(KEY::W))
+		{
+			DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
+			frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorAdd(position, frontVector);
+		}
+		else if (Keyboard::IsKeyDown(KEY::S))
+		{
+			DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
+			frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorSubtract(position, frontVector);
+		}
+		if (Keyboard::IsKeyDown(KEY::D))
+		{
+			DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
+			rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorAdd(position, rightVector);
+		}
+		else if (Keyboard::IsKeyDown(KEY::A))
+		{
+			DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
+			rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorSubtract(position, rightVector);
+		}
+		if (Keyboard::IsKeyDown(KEY::Q))
+		{
+			DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
+			upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorSubtract(position, upVector);
+		}
+		else if (Keyboard::IsKeyDown(KEY::E))
+		{
+			DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
+			upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorAdd(position, upVector);
+		}
+		DirectX::XMStoreFloat3(&m_Position, position);
+		RecalculateViewProjectionMatrix();
 
-	OnMouseMove();
+		OnMouseMove();
+	}
 }
 
 void Camera::OnMouseMove() noexcept
