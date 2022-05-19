@@ -39,7 +39,7 @@ static const PointLight light3 = { 0.0f, 50.0f, -5.0f, 0.0f, 0.7f, 0.7f };
 
 //Modifiers
 static const float ambient = 0.2f;
-static const float specular = 0.5f;
+static const float specular = 0.6f;
 static const float diffuse = 0.7f;
 
 float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float3 cameraPos, float4 color)

@@ -24,7 +24,9 @@ void Renderer::Initialize() noexcept
 
 void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
-	auto pCommandAllocator = DXCore::GetCommandAllocators()[m_CurrentBackBufferIndex];
+	auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
+
+	auto pCommandAllocator = DXCore::GetCommandAllocators()[frameInFlightIndex];
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
 
@@ -83,7 +85,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 	static float speed = 1.0f;
 
 	auto pCommandList = DXCore::GetCommandList();
-	auto index = Window::Get().GetCurrentBackbufferIndex();
+	auto index = Window::Get().GetCurrentFrameInFlightIndex();
 
 	for (auto& modelInstances : vertexObjects)
 	{
@@ -113,6 +115,7 @@ void Renderer::End() noexcept
 {
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
+	auto frameIndex = Window::Get().GetCurrentFrameInFlightIndex();
 
 	//Present:
 	{
@@ -122,12 +125,12 @@ void Renderer::End() noexcept
 		ID3D12CommandList* commandLists[] = { pCommandList.Get() };
 		STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 
-		m_FrameFenceValues[m_CurrentBackBufferIndex] =  RenderCommand::SignalFenceFromGPU();
+		m_FrameFenceValues[frameIndex] =  RenderCommand::SignalFenceFromGPU();
 		Window::Get().Present();
 
 		m_CurrentBackBufferIndex = Window::Get().GetCurrentBackbufferIndex();
 
-		RenderCommand::WaitForFenceValue(m_FrameFenceValues[m_CurrentBackBufferIndex]);
+		RenderCommand::WaitForFenceValue(m_FrameFenceValues[frameIndex]);
 	}
 }
 
@@ -370,7 +373,7 @@ void Renderer::CreatePipelineStateObject() noexcept
 Microsoft::WRL::ComPtr<IDxcBlob> Renderer::CompileShader(const std::wstring& filepath, const std::wstring& entryPoint, const std::wstring& target) noexcept
 {
 	//Find the file name.
-	uint32_t dotPos = filepath.find(L".", 0);
+	uint32_t dotPos = static_cast<uint32_t>(filepath.find(L".", 0));
 	std::wstring name = filepath.substr(0, dotPos);
 
 	//Compiler and utils should be kept in some sort of shader handler ideally.

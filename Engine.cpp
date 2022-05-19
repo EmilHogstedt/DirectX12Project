@@ -5,9 +5,7 @@
 
 void Engine::Initialize(const std::wstring& applicationName) noexcept
 {
-#if defined(_DEBUG)
 	CreateConsole();
-#endif
 	DXCore::Initialize();
 	Window::Get().Initialize(applicationName);
 
@@ -32,13 +30,18 @@ void Engine::Run() noexcept
 
 	float deltaTime = 0.0f;
 	auto lastFrameEnd = std::chrono::system_clock::now();
-
+	uint64_t frameCount = 0u;
+	bool startProfiling = false;
 	while (s_Window.IsRunning())
 	{
-		m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
-		m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
-		m_pRenderer->End();
-		
+		{
+			if (startProfiling)
+				Profiler profiler(__FUNCTION__, [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
+
+			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
+			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
+			m_pRenderer->End();
+		}
 		m_pCamera->Update(deltaTime);
 		s_Window.OnUpdate();
 
@@ -46,16 +49,26 @@ void Engine::Run() noexcept
 		auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(currentFrameEnd - lastFrameEnd).count();
 		deltaTime = elapsed / 1'000'000.0f;
 		lastFrameEnd = currentFrameEnd;
+
+		frameCount++;
+		if (frameCount == 2000 && startProfiling == false)
+		{
+			startProfiling = true;
+			frameCount = 0u;
+		}
+		else if (frameCount == 2'000 && startProfiling == true)
+		{
+			ProfilerManager::Clear();
+			frameCount = 0u;
+		}
 	}
 	m_pRenderer->OnShutDown();
 }
 
-#if defined(_DEBUG)
 void Engine::CreateConsole() noexcept
 {
-	assert(AllocConsole() && "Unable to allocate console");
-	assert(freopen("CONIN$", "r", stdin));
-	assert(freopen("CONOUT$", "w", stdout));
-	assert(freopen("CONOUT$", "w", stderr));
+	AllocConsole() && "Unable to allocate console";
+	freopen("CONIN$", "r", stdin);
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
 }
-#endif

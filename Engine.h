@@ -2,6 +2,7 @@
 #include "Renderer.h"
 
 #include "Camera.h"
+#include "Profiler.h"
 class Engine
 {
 public:
@@ -9,10 +10,10 @@ public:
 	~Engine() noexcept = default;
 	void Initialize(const std::wstring& applicationName) noexcept;
 	void Run() noexcept;
-#if defined(_DEBUG)
+
 private:
 	void CreateConsole() noexcept;
-#endif
+
 private:
 	std::wstring m_AppName;
 	std::unique_ptr<Renderer> m_pRenderer;

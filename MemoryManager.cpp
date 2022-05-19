@@ -78,7 +78,7 @@ ConstantBufferView MemoryManager::CreateConstantBuffer(const std::string& descri
 
 void MemoryManager::UpdateConstantBuffer(const ConstantBufferView& constantBufferView, void* pData, uint32_t sizeOfData) noexcept
 {
-	auto index = Window::Get().GetCurrentBackbufferIndex();
+	auto index = Window::Get().GetCurrentFrameInFlightIndex();
 
 	D3D12_RANGE range = { 0,0 };
 	auto address = constantBufferView.pResources[index]->GetGPUVirtualAddress();

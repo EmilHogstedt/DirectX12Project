@@ -68,7 +68,7 @@ void VertexObject::Update(float deltaTime)
 		{
 			m_ScaleAngle -= 180.0f;
 		}
-		float val = (sin(m_ScaleAngle * (M_PI / 180.0f)) * 0.5f) + 0.75f;
+		float val = static_cast<float>((sin(m_ScaleAngle * (M_PI / 180.0f)) * 0.5f) + 0.75f);
 		scaleF.x = m_Scale * val;
 		scaleF.y = m_Scale * val;
 		scaleF.z = m_Scale * val;
@@ -81,7 +81,7 @@ void VertexObject::Update(float deltaTime)
 		{
 			m_ScaleAngle -= 360.0f;
 		}
-		float val = sin(m_ScaleAngle * (M_PI / 180.0f));
+		float val = static_cast<float>(sin(m_ScaleAngle * (M_PI / 180.0f)));
 		translationF.x = m_OriginalX + (val * 20.0f);
 		break;
 	}

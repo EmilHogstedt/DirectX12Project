@@ -64,7 +64,8 @@ Window::Window() noexcept
 	: m_WindowHandle{nullptr},
 	  m_IsRunning{true},
 	  m_Message{},
-	  m_pSwapChain{nullptr}
+	  m_pSwapChain{nullptr},
+	  m_FrameInFlight{ 0u }
 {}
 
 void Window::CreateWindow(const std::wstring& applicationName) noexcept
@@ -126,7 +127,7 @@ void Window::CreateWindow(const std::wstring& applicationName) noexcept
 	rawInputDevice.dwFlags = 0;
 	rawInputDevice.hwndTarget = nullptr;
 	if (RegisterRawInputDevices(&rawInputDevice, 1u, sizeof(rawInputDevice)) == FALSE)
-		DBG_ASSERT(false, "Failed to register mouse device for raw input.");
+		DBG_ASSERT(false, "Failed to register mouse device for raw input.")
 
 	while (::ShowCursor(false) >= 0);
 
@@ -146,7 +147,7 @@ void Window::CreateSwapChain() noexcept
 	swapChainDescriptor.Stereo = FALSE;
 	swapChainDescriptor.SampleDesc = { 1u, 0u };
 	swapChainDescriptor.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDescriptor.BufferCount = NR_OF_FRAMES;
+	swapChainDescriptor.BufferCount = NR_OF_BACKBUFFERS;
 	swapChainDescriptor.Scaling = DXGI_SCALING_STRETCH;
 	swapChainDescriptor.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDescriptor.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
@@ -166,7 +167,7 @@ void Window::CreateSwapChain() noexcept
 
 void Window::CreateBackBufferRTVs()
 {
-	for (uint32_t i{ 0u }; i < NR_OF_FRAMES; ++i)
+	for (uint32_t i{ 0u }; i < NR_OF_BACKBUFFERS; ++i)
 	{
 		auto cpuHandle{ m_pBackBufferRTVHeap->GetCurrentCPUOffsetHandle() };
 		Microsoft::WRL::ComPtr<ID3D12Resource> pBackBuffer{ nullptr };
@@ -183,7 +184,7 @@ void Window::CreateBackBufferRTVs()
 void Window::Initialize(const std::wstring& applicationName) noexcept
 {
 	CreateWindow(applicationName);
-	m_pBackBufferRTVHeap = std::make_unique<DescriptorHeap>(NR_OF_FRAMES, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
+	m_pBackBufferRTVHeap = std::make_unique<DescriptorHeap>(NR_OF_BACKBUFFERS, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
 	CreateSwapChain();
 	CreateBackBufferRTVs();
 }
@@ -203,4 +204,5 @@ void Window::OnUpdate() noexcept
 void Window::Present() noexcept
 {
 	HR(m_pSwapChain->Present(0u, 0u));
+	m_FrameInFlight = (m_FrameInFlight + 1) % NR_OF_FRAMES;
 }

@@ -13,6 +13,7 @@ public:
 	[[nodiscard]] constexpr std::unique_ptr<DescriptorHeap>& GetBackBufferRTVHeap() noexcept { return m_pBackBufferRTVHeap; }
 	[[nodiscard]] constexpr uint8_t GetCurrentBackbufferIndex() noexcept { return static_cast<uint8_t>(m_pSwapChain->GetCurrentBackBufferIndex()); }
 	[[nodiscard]] constexpr std::pair<uint32_t, uint32_t> GetDimensions() noexcept { return std::make_pair(m_Width, m_Height); }
+	[[nodiscard]] constexpr uint32_t GetCurrentFrameInFlightIndex() { return m_FrameInFlight; }
 private:
 	Window() noexcept;
 	~Window() noexcept = default;
@@ -25,8 +26,9 @@ private:
 	bool m_IsRunning;
 	MSG m_Message;
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> m_pSwapChain;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_pBackBuffers[NR_OF_FRAMES];
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_pBackBuffers[NR_OF_BACKBUFFERS];
 	std::unique_ptr<DescriptorHeap> m_pBackBufferRTVHeap;
 	uint32_t m_Width;
 	uint32_t m_Height;
+	uint32_t m_FrameInFlight;
 };
