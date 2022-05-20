@@ -13,6 +13,7 @@ public:
 	[[nodiscard]] float GetElement2PMatrix() noexcept { return m_ProjectionMatrix._22; }
 	[[nodiscard]] constexpr DirectX::XMFLOAT3& GetPosition() noexcept { return m_Position; }
 	void OnMouseMove() noexcept;
+	void SetCameraSpeed(float speed) noexcept;
 private:
 	DirectX::XMFLOAT3 m_Position;
 	DirectX::XMFLOAT3 m_UpVector;

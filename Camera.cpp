@@ -9,7 +9,7 @@ Camera::Camera(const DirectX::XMFLOAT3& position, const uint32_t width, const ui
 	  m_RightVector{ DirectX::XMFLOAT3{1.0f, 0.0f, 0.0f} },
 	  m_Yaw{ 90.0f },
 	  m_Pitch{ 0.0f },
-	  m_CameraSpeed{ 10.0f },
+	  m_CameraSpeed{ 40.0f },
 	  m_TiltSensitivity{ 0.25f }
 {
 	DirectX::XMVECTOR positionAsXMVector = DirectX::XMLoadFloat3(&position);
@@ -42,47 +42,50 @@ void Camera::RecalculateViewProjectionMatrix() noexcept
 
 void Camera::Update(const float deltaTime) noexcept
 {
-	DirectX::XMVECTOR position = DirectX::XMLoadFloat3(&m_Position);
-	if (Keyboard::IsKeyDown(KEY::W))
+	if (Mouse::IsRightButtonPressed())
 	{
-		DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
-		frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorAdd(position, frontVector);
-	}
-	else if (Keyboard::IsKeyDown(KEY::S))
-	{
-		DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
-		frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorSubtract(position, frontVector);
-	}
-	if (Keyboard::IsKeyDown(KEY::D))
-	{
-		DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
-		rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorAdd(position, rightVector);
-	}
-	else if (Keyboard::IsKeyDown(KEY::A))
-	{
-		DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
-		rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorSubtract(position, rightVector);
-	}
-	if (Keyboard::IsKeyDown(KEY::Q))
-	{
-		DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
-		upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorSubtract(position, upVector);
-	}
-	else if (Keyboard::IsKeyDown(KEY::E))
-	{
-		DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
-		upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
-		position = DirectX::XMVectorAdd(position, upVector);
-	}
-	DirectX::XMStoreFloat3(&m_Position, position);
-	RecalculateViewProjectionMatrix();
+		DirectX::XMVECTOR position = DirectX::XMLoadFloat3(&m_Position);
+		if (Keyboard::IsKeyDown(KEY::W))
+		{
+			DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
+			frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorAdd(position, frontVector);
+		}
+		else if (Keyboard::IsKeyDown(KEY::S))
+		{
+			DirectX::XMVECTOR frontVector = DirectX::XMLoadFloat3(&m_FrontVector);
+			frontVector = DirectX::XMVectorScale(frontVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorSubtract(position, frontVector);
+		}
+		if (Keyboard::IsKeyDown(KEY::D))
+		{
+			DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
+			rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorAdd(position, rightVector);
+		}
+		else if (Keyboard::IsKeyDown(KEY::A))
+		{
+			DirectX::XMVECTOR rightVector = DirectX::XMLoadFloat3(&m_RightVector);
+			rightVector = DirectX::XMVectorScale(rightVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorSubtract(position, rightVector);
+		}
+		if (Keyboard::IsKeyDown(KEY::Q))
+		{
+			DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
+			upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorSubtract(position, upVector);
+		}
+		else if (Keyboard::IsKeyDown(KEY::E))
+		{
+			DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&m_UpVector);
+			upVector = DirectX::XMVectorScale(upVector, m_CameraSpeed * deltaTime);
+			position = DirectX::XMVectorAdd(position, upVector);
+		}
+		DirectX::XMStoreFloat3(&m_Position, position);
+		RecalculateViewProjectionMatrix();
 
-	OnMouseMove();
+		OnMouseMove();
+	}
 }
 
 void Camera::OnMouseMove() noexcept
@@ -112,4 +115,9 @@ void Camera::OnMouseMove() noexcept
 	DirectX::XMStoreFloat3(&m_UpVector, upVector);
 
 	RecalculateViewProjectionMatrix();
+}
+
+void Camera::SetCameraSpeed(float speed) noexcept
+{
+	m_CameraSpeed = speed;
 }

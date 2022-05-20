@@ -2,11 +2,17 @@
 #include "Window.h"
 #include "DXCore.h"
 #include "Mouse.h"
+#include "imgui_impl_win32.h"
 
 Window Window::s_Instance{};
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT CALLBACK WindowProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(windowHandle, message, wParam, lParam))
+		return true;
+
 	switch (message)
 	{
 	case WM_CLOSE:
@@ -54,6 +60,18 @@ LRESULT CALLBACK WindowProc(HWND windowHandle, UINT message, WPARAM wParam, LPAR
 		{
 			Mouse::OnRawDelta(ri.data.mouse.lLastX, ri.data.mouse.lLastY);
 		}
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		Mouse::OnRightButtonPressed();
+		while (::ShowCursor(false) >= 0);
+		break;
+	}
+	case WM_RBUTTONUP:
+	{
+		Mouse::OnRightButtonReleased();
+		while (::ShowCursor(true) < 0);
 		break;
 	}
 	}
@@ -151,7 +169,7 @@ void Window::CreateSwapChain() noexcept
 	swapChainDescriptor.Scaling = DXGI_SCALING_STRETCH;
 	swapChainDescriptor.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDescriptor.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-	swapChainDescriptor.Flags = 0u;
+	swapChainDescriptor.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	HR(pFactory->CreateSwapChainForHwnd
 	(
@@ -203,6 +221,6 @@ void Window::OnUpdate() noexcept
 
 void Window::Present() noexcept
 {
-	HR(m_pSwapChain->Present(0u, 0u));
+	HR(m_pSwapChain->Present(0u, DXGI_PRESENT_ALLOW_TEARING));
 	m_FrameInFlight = (m_FrameInFlight + 1) % NR_OF_FRAMES;
 }

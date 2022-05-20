@@ -73,6 +73,11 @@ void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, Direc
 		tempModel = m_UniqueModels[path];
 	}
 	m_TotalMeshes += (uint32_t)(tempModel->GetMeshes().size());
+	for (uint32_t i{ 0u }; i < tempModel->GetMeshes().size(); ++i)
+	{
+		m_TotalNrOfVertices += tempModel->GetMeshes()[i]->GetVertexCount();
+		m_TotalNrOfIndices += tempModel->GetMeshes()[i]->GetIndexCount();
+	}
 
 	//No matter the case we want to create a new object using the fetched model.
 	std::shared_ptr<VertexObject> tempObject = std::make_shared<VertexObject>();
