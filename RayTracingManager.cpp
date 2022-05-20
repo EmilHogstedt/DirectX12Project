@@ -176,19 +176,19 @@ void RayTracingManager::BuildTopAcceleration(
 				//Change the transform to use the object's transform
 				//First row.
 				m_InstancingDescs[index].Transform[0][0] = objectTransform._11;
-				m_InstancingDescs[index].Transform[0][1] = objectTransform._12;
-				m_InstancingDescs[index].Transform[0][2] = objectTransform._13;
-				m_InstancingDescs[index].Transform[0][3] = objectTransform._14;
+				m_InstancingDescs[index].Transform[0][1] = objectTransform._21;
+				m_InstancingDescs[index].Transform[0][2] = objectTransform._31;
+				m_InstancingDescs[index].Transform[0][3] = objectTransform._41;
 				//Second row.
-				m_InstancingDescs[index].Transform[1][0] = objectTransform._21;
+				m_InstancingDescs[index].Transform[1][0] = objectTransform._12;
 				m_InstancingDescs[index].Transform[1][1] = objectTransform._22;
-				m_InstancingDescs[index].Transform[1][2] = objectTransform._23;
-				m_InstancingDescs[index].Transform[1][3] = objectTransform._24;
+				m_InstancingDescs[index].Transform[1][2] = objectTransform._32;
+				m_InstancingDescs[index].Transform[1][3] = objectTransform._42;
 				//Third row.
-				m_InstancingDescs[index].Transform[2][0] = objectTransform._31;
-				m_InstancingDescs[index].Transform[2][1] = objectTransform._32;
+				m_InstancingDescs[index].Transform[2][0] = objectTransform._13;
+				m_InstancingDescs[index].Transform[2][1] = objectTransform._23;
 				m_InstancingDescs[index].Transform[2][2] = objectTransform._33;
-				m_InstancingDescs[index].Transform[2][3] = objectTransform._34;
+				m_InstancingDescs[index].Transform[2][3] = objectTransform._43;
 
 				m_InstancingDescs[index].InstanceID = index;
 				m_InstancingDescs[index].InstanceMask = 0xFF;

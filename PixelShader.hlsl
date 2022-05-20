@@ -33,7 +33,7 @@ ConstantBuffer<VPInverseBuffer> vpInverseBuffer : register(b0, space1);
 ConstantBuffer<ObjectColor> objectColor : register(b1, space1);
 ConstantBuffer<CameraBuffer> camera : register(b2, space1);
 
-static const PointLight light1 = { -40.0f, 20.0f, 80.0f, 1.0f, 0.0f, 0.0f };
+static const PointLight light1 = { -40.0f, 60.0f, 80.0f, 1.0f, 0.0f, 0.0f };
 static const PointLight light2 = { 50.0f, 50.0f, 10.0f, 0.7f, 0.7f, 0.3f };
 static const PointLight light3 = { 0.0f, 50.0f, -5.0f, 0.0f, 0.7f, 0.7f };
 
@@ -52,6 +52,29 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
     //Ambient
     float3 ambientColor = ambient * light.col;
     
+    //Shadows with raytracing
+    
+    RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
+
+    RayDesc ray;
+    ray.Origin = outPosWorld.xyz;
+    ray.Direction = normalize(outPosWorld.xyz - light1.pos);
+    //ray.Direction.y = -ray.Direction.y;
+    //ray.Origin += ray.Direction * 0.1f;
+    ray.TMin = 0.1f;
+    ray.TMax = 10000.0f;
+
+    query.TraceRayInline(scene, 0, 0xFF, ray);
+    query.Proceed();
+    
+    if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
+    {
+        if (query.CommittedRayT() < dist)
+        {
+            return ambientColor;
+        }
+    }
+    
     //Diffuse
     float diff = max(dot(lightDir, normal), 0.0f);
     float3 diffuseColor = diff * light.col * diffuse;
@@ -60,11 +83,11 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
     float3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 64);
     float3 specularColor = specular * spec * light.col;
-    
+
     ambientColor = ambientColor * color.xyz * attenuation;
     diffuseColor = diffuseColor * color.xyz * attenuation;
     specularColor = specularColor * color.xyz * attenuation;
-    //float3 finalCol = (ambientColor + diffuseColor + specularColor) * color.xyz;
+
     return (ambientColor + diffuseColor + specularColor);
 }
 
@@ -73,29 +96,9 @@ float4 main(in VS_OUT psIn) : SV_TARGET
     float3 normal = normalize(psIn.outNormal);
 
     float3 result = float3(0.0f, 0.0f, 0.0f);
-    result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    //result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
     result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-
-    //Shadows with raytracing
-    /*
-    RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
-
-    RayDesc ray;
-    ray.Origin = psIn.outPosWorld.xyz;
-    ray.Direction = normalize(outPosWorld.xyz - light1.pos);
-
-    ray.TMin = 0.0f;
-    ray.TMax = 10000.0f;
-
-    query.TraceRayInline(scene, 0, 0xFF, ray);
-    query.Proceed();
-
-    if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
-    {
-        result *= 0.2f;
-    }
-    */
+    //result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
 
     return float4(result, objectColor.color.w);
 }
