@@ -58,9 +58,9 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
 
     RayDesc ray;
     ray.Origin = outPosWorld.xyz;
-    ray.Direction = normalize(outPosWorld.xyz - light1.pos);
-    //ray.Direction.y = -ray.Direction.y;
-    //ray.Origin += ray.Direction * 0.1f;
+
+    ray.Direction = normalize(light.pos - outPosWorld.xyz);
+    //ray.Direction = -ray.Direction;
     ray.TMin = 0.1f;
     ray.TMax = 10000.0f;
 
@@ -84,7 +84,7 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
     float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 64);
     float3 specularColor = specular * spec * light.col;
 
-    ambientColor = ambientColor * color.xyz * attenuation;
+    ambientColor = ambientColor * color.xyz;
     diffuseColor = diffuseColor * color.xyz * attenuation;
     specularColor = specularColor * color.xyz * attenuation;
 
@@ -96,9 +96,9 @@ float4 main(in VS_OUT psIn) : SV_TARGET
     float3 normal = normalize(psIn.outNormal);
 
     float3 result = float3(0.0f, 0.0f, 0.0f);
-    //result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
     result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    //result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
 
     return float4(result, objectColor.color.w);
 }
