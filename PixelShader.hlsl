@@ -44,10 +44,10 @@ static const float diffuse = 0.7f;
 
 float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float3 cameraPos, float4 color)
 {
-    float dist = length(light.pos - outPosWorld);
+    float dist = length(light.pos - outPosWorld.xyz);
     float attenuation = 1.0f / (1.0f + 0.0f * dist + 0.0001f * (dist * dist));
-    float3 lightDir = normalize(light.pos - outPosWorld);
-    float3 viewDir = normalize(camera.pos - outPosWorld);
+    float3 lightDir = normalize(light.pos - outPosWorld.xyz);
+    float3 viewDir = normalize(camera.pos - outPosWorld.xyz);
 
     //Ambient
     float3 ambientColor = ambient * light.col;
