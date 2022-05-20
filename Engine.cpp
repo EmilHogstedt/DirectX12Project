@@ -33,8 +33,8 @@ void Engine::Run() noexcept
 	float deltaTime = 0.0f;
 	auto lastFrameEnd = std::chrono::system_clock::now();
 	uint64_t frameCount = 0u;
-	uint64_t framesPerSecond = 0u;
-	uint64_t currentFramesPerSecond = 0u;
+	uint32_t framesPerSecond = 0u;
+	uint32_t currentFramesPerSecond = 0u;
 	float currentFrameTime = 0.0f;
 	float secondTracker = 0.0f;
 	bool startProfiling = false;
