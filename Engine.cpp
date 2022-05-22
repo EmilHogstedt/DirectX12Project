@@ -43,8 +43,9 @@ void Engine::Run() noexcept
 		{
 			Profiler profiler("Render loop", [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
 
+			m_pScene->Update(deltaTime);
 			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
-			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
+			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects());
 
 			{
 				ImGuiManager::Begin();

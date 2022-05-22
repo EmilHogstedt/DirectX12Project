@@ -28,7 +28,7 @@ public:
 	~Renderer() noexcept = default;
 	void Initialize() noexcept;
 	void Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept;
-	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
+	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
 private:

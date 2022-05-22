@@ -80,7 +80,7 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
 }
 
-void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept
+void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept
 {
 	static float speed = 1.0f;
 
@@ -97,8 +97,6 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
 			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
 			{
-				object->Update(deltaTime);
-
 				auto& cbv = object->GetTransformConstantBufferView();
 				auto gpuHandle = cbv.GpuHandles[index];
 

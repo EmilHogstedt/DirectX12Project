@@ -40,11 +40,11 @@ void RayTracingManager::Initialize(
 	STDCALL(DXCore::GetCommandList()->ResourceBarrier(1, &topBarrier));
 }
 
-void RayTracingManager::Refit() noexcept
-{
-}
-
-void RayTracingManager::Rebuild() noexcept
+void RayTracingManager::UpdateInstances(
+	const std::unordered_map<std::string, std::shared_ptr<Model>>& models,
+	const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& objects,
+	uint32_t totalNrMeshes
+) noexcept
 {
 }
 

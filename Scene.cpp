@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Scene.h"
 
-void Scene::Initialize()
+void Scene::Initialize() noexcept
 {
 	m_pRayTracingManager = std::make_unique<RayTracingManager>();
 	//Use this to randomize colors.
@@ -49,6 +49,25 @@ void Scene::Initialize()
 
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+}
+
+void Scene::Update(float deltaTime) noexcept
+{
+	//Update all objets.
+	for (auto& modelInstances : m_Objects)
+	{
+		for (auto& object : modelInstances.second)
+		{
+			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
+			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
+			{
+				object->Update(deltaTime);
+			}
+		}
+	}
+
+	//Update the top level acceleration structure.
+	m_pRayTracingManager->UpdateInstances(m_UniqueModels, m_Objects, m_TotalMeshes);
 }
 
 void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType, DirectX::XMFLOAT4 color)
