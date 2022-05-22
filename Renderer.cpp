@@ -73,8 +73,10 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	vpInverseCBuffer.elementsP = DirectX::XMFLOAT2(pCamera->GetElement1PMatrix(), pCamera->GetElement2PMatrix());
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4 + 2, &vpInverseCBuffer, 0u));
 
-	auto cameraPos = DirectX::XMLoadFloat3(&(pCamera->GetPosition()));
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(7u, 3, &cameraPos, 0u));
+	DirectX::XMFLOAT3 cameraFloat3 = pCamera->GetPosition();
+	DirectX::XMFLOAT4 cameraFloat4 = DirectX::XMFLOAT4(cameraFloat3.x, cameraFloat3.y, cameraFloat3.z, (float)pCamera->GetRayTraceBool());
+	auto cameraPos = DirectX::XMLoadFloat4(&(cameraFloat4));
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(7u, 4, &cameraPos, 0u));
 
 	//Raytracing accelerationstructure.
 	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
@@ -251,7 +253,7 @@ void Renderer::CreateRootSignature() noexcept
 	
 	D3D12_ROOT_PARAMETER cameraPS = {};
 	cameraPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	cameraPS.Constants.Num32BitValues = 3;
+	cameraPS.Constants.Num32BitValues = 3 + 1;
 	cameraPS.Constants.ShaderRegister = 2u;
 	cameraPS.Constants.RegisterSpace = 1u;
 	cameraPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;

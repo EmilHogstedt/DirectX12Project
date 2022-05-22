@@ -13,8 +13,7 @@ void Scene::Initialize() noexcept
 	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 90.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 20.0f, MOVEBACKANDFORTH, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 100.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 20.0f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 
-	//AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.01f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
-	//AddVertexObject("Models/wolf.obj", DirectX::XMVectorSet(-50.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.05f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	//AddVertexObject("Models/Spaceship.obj", DirectX::XMVectorSet(50.0f, 50.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.5f, NONE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 2.0f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(-20.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2, 0.0f, 0.0f), 2.0f, RESIZE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 	//Create the "room"
@@ -51,7 +50,7 @@ void Scene::Initialize() noexcept
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 }
 
-void Scene::Update(float deltaTime) noexcept
+void Scene::Update(bool rayTraceBool, float deltaTime) noexcept
 {
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
 	auto pCommandList = DXCore::GetCommandList();
@@ -73,20 +72,13 @@ void Scene::Update(float deltaTime) noexcept
 			}
 		}
 	}
-	/*
-	HR(pCommandList->Close());
-	
-	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
-	RenderCommand::Flush();
-
-	HR(pCommandAllocator->Reset());
-	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
-	*/
-	//Update the top level acceleration structure.
-	m_pRayTracingManager->UpdateInstances(m_UniqueModels, m_Objects, m_TotalMeshes);
+	if (rayTraceBool)
+	{
+		//Update the top level acceleration structure.
+		m_pRayTracingManager->UpdateInstances(m_UniqueModels, m_Objects, m_TotalMeshes);
+	}
 
 	//Make sure we exectute the commands after everything is updated.
-	
 	HR(pCommandList->Close());
 	
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));

@@ -25,6 +25,7 @@ struct VPInverseBuffer
 struct CameraBuffer
 {
     float3 pos;
+    float rayTraceBool;
 };
 
 RaytracingAccelerationStructure scene : register(t0, space1);
@@ -43,7 +44,7 @@ static const float ambient = 0.2f;
 static const float specular = 0.6f;
 static const float diffuse = 0.7f;
 
-float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float3 cameraPos, float4 color)
+float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float3 cameraPos, float4 color, float rayTraceBool)
 {
     float dist = length(light.pos - outPosWorld.xyz);
     float attenuation = 1.0f / (1.0f + 0.0f * dist + 0.0001f * (dist * dist));
@@ -52,28 +53,31 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
 
     //Ambient
     float3 ambientColor = ambient * light.col;
-    
-    //Shadows with raytracing
-    
-    RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
-
-    RayDesc ray;
-    ray.Origin = outPosWorld.xyz;
-
-    ray.Direction = normalize(light.pos - outPosWorld.xyz);
-    //ray.Direction = -ray.Direction;
-    ray.TMin = 0.1f;
-    ray.TMax = 10000.0f;
-
-    query.TraceRayInline(scene, 0, 0xFF, ray);
-    query.Proceed();
-    
     ambientColor = ambientColor * color.xyz * attenuation;
-    if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
+
+    //Shadows with raytracing
+    if (rayTraceBool)
     {
-        if (query.CommittedRayT() < dist)
+        RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
+
+        RayDesc ray;
+        ray.Origin = outPosWorld.xyz;
+
+        ray.Direction = normalize(light.pos - outPosWorld.xyz);
+        //ray.Direction = -ray.Direction;
+        ray.TMin = 0.1f;
+        ray.TMax = 10000.0f;
+
+        query.TraceRayInline(scene, 0, 0xFF, ray);
+        query.Proceed();
+
+
+        if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
         {
-            return ambientColor;
+            if (query.CommittedRayT() < dist)
+            {
+                return ambientColor;
+            }
         }
     }
     
@@ -97,10 +101,10 @@ float4 main(in VS_OUT psIn) : SV_TARGET
     float3 normal = normalize(psIn.outNormal);
 
     float3 result = float3(0.0f, 0.0f, 0.0f);
-    result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    result += CalculateLight(light4, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light4, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
 
     return float4(result, objectColor.color.w);
 }

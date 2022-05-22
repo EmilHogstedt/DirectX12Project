@@ -86,6 +86,10 @@ void Camera::Update(const float deltaTime) noexcept
 
 		OnMouseMove();
 	}
+	if (Keyboard::IsKeyDown(KEY::R))
+	{
+		m_RayTrace = !m_RayTrace;
+	}
 }
 
 void Camera::OnMouseMove() noexcept
