@@ -53,6 +53,14 @@ void Scene::Initialize() noexcept
 
 void Scene::Update(float deltaTime) noexcept
 {
+	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
+	auto pCommandList = DXCore::GetCommandList();
+	auto pDevice = DXCore::GetDevice();
+	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
+
+	HR(pCommandAllocator->Reset());
+	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+
 	//Update all objets.
 	for (auto& modelInstances : m_Objects)
 	{
@@ -65,9 +73,25 @@ void Scene::Update(float deltaTime) noexcept
 			}
 		}
 	}
+	/*
+	HR(pCommandList->Close());
+	
+	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
+	RenderCommand::Flush();
 
+	HR(pCommandAllocator->Reset());
+	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+	*/
 	//Update the top level acceleration structure.
 	m_pRayTracingManager->UpdateInstances(m_UniqueModels, m_Objects, m_TotalMeshes);
+
+	//Make sure we exectute the commands after everything is updated.
+	
+	HR(pCommandList->Close());
+	
+	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
+	RenderCommand::Flush();
+
 }
 
 void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType, DirectX::XMFLOAT4 color)

@@ -36,6 +36,7 @@ ConstantBuffer<CameraBuffer> camera : register(b2, space1);
 static const PointLight light1 = { -40.0f, 60.0f, 80.0f, 1.0f, 0.0f, 0.0f };
 static const PointLight light2 = { 50.0f, 50.0f, 10.0f, 0.7f, 0.7f, 0.3f };
 static const PointLight light3 = { 0.0f, 50.0f, -5.0f, 0.0f, 0.7f, 0.7f };
+static const PointLight light4 = { 5.0f, 100.0f, -5.0f, 0.0f, 1.0f, 0.0f };
 
 //Modifiers
 static const float ambient = 0.2f;
@@ -67,6 +68,7 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
     query.TraceRayInline(scene, 0, 0xFF, ray);
     query.Proceed();
     
+    ambientColor = ambientColor * color.xyz * attenuation;
     if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
     {
         if (query.CommittedRayT() < dist)
@@ -84,7 +86,6 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
     float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 64);
     float3 specularColor = specular * spec * light.col;
 
-    ambientColor = ambientColor * color.xyz;
     diffuseColor = diffuseColor * color.xyz * attenuation;
     specularColor = specularColor * color.xyz * attenuation;
 
@@ -99,6 +100,7 @@ float4 main(in VS_OUT psIn) : SV_TARGET
     result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
     result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color);
     result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    result += CalculateLight(light4, psIn.outPosWorld, normal, camera.pos, objectColor.color);
 
     return float4(result, objectColor.color.w);
 }

@@ -46,6 +46,82 @@ void RayTracingManager::UpdateInstances(
 	uint32_t totalNrMeshes
 ) noexcept
 {
+	uint32_t index = 0u;
+	//For each unique model
+	for (auto& model : models)
+	{
+		//For each object using that unique model.
+		std::string currentModelName = model.first;
+		std::vector<std::shared_ptr<VertexObject>> currentVector = objects.at(currentModelName);
+		for (auto& object : currentVector)
+		{
+			//For each mesh that object uses.
+			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
+			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
+			{
+				DirectX::XMMATRIX objectMatrix = DirectX::XMLoadFloat4x4(&object->GetTransform());
+				objectMatrix = DirectX::XMMatrixTranspose(objectMatrix);
+				DirectX::XMFLOAT4X4 objectTransform = {};
+				DirectX::XMStoreFloat4x4(&objectTransform, objectMatrix);
+				//Change the transform to use the object's transform
+				//First row.
+				m_InstancingDescs[index].Transform[0][0] = objectTransform._11;
+				m_InstancingDescs[index].Transform[0][1] = objectTransform._12;
+				m_InstancingDescs[index].Transform[0][2] = objectTransform._13;
+				m_InstancingDescs[index].Transform[0][3] = objectTransform._14;
+				//Second row.
+				m_InstancingDescs[index].Transform[1][0] = objectTransform._21;
+				m_InstancingDescs[index].Transform[1][1] = objectTransform._22;
+				m_InstancingDescs[index].Transform[1][2] = objectTransform._23;
+				m_InstancingDescs[index].Transform[1][3] = objectTransform._24;
+				//Third row.
+				m_InstancingDescs[index].Transform[2][0] = objectTransform._31;
+				m_InstancingDescs[index].Transform[2][1] = objectTransform._32;
+				m_InstancingDescs[index].Transform[2][2] = objectTransform._33;
+				m_InstancingDescs[index].Transform[2][3] = objectTransform._34;
+
+				/*
+				m_InstancingDescs[index].InstanceID = index;
+				m_InstancingDescs[index].InstanceMask = 0xFF;
+				m_InstancingDescs[index].InstanceContributionToHitGroupIndex = 0;
+				m_InstancingDescs[index].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+				m_InstancingDescs[index].AccelerationStructure = ((m_ResultBuffersBottom[currentModelName])[i])->GetGPUVirtualAddress();
+				*/
+				index++;
+			}
+			//Only increment the index for each object, we do not want different meshes in the same object to have different indices.
+			//This is to be swapped to a material number in the future.
+
+		}
+	}
+
+	//Copy the desc to the created buffer resource.
+	D3D12_RANGE zero = { 0, 0 };
+	unsigned char* mappedPtr = nullptr;
+	HR(m_pInstanceBufferTop->Map(0, &zero, reinterpret_cast<void**>(&mappedPtr)));
+	std::memcpy(mappedPtr, m_InstancingDescs.get(), sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * totalNrMeshes);
+	STDCALL(m_pInstanceBufferTop->Unmap(0, nullptr));
+
+	//Create the top level acceleration structure description.
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS topInputs = {};
+	{
+		topInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+		topInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE; //Maybe change this to faster build and make it a member variable.
+		topInputs.NumDescs = totalNrMeshes;
+		topInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+		topInputs.InstanceDescs = m_pInstanceBufferTop->GetGPUVirtualAddress();
+	}
+
+	//Finally create the acceleration structure.
+	m_AccelerationDescTop = std::make_unique<D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC>();
+	{
+		m_AccelerationDescTop->DestAccelerationStructureData = m_pResultBufferTop->GetGPUVirtualAddress();
+		m_AccelerationDescTop->Inputs = topInputs;
+		m_AccelerationDescTop->SourceAccelerationStructureData = NULL; //Change this when dynamic scene?
+		m_AccelerationDescTop->ScratchAccelerationStructureData = m_pScratchBufferTop->GetGPUVirtualAddress();
+	}
+
+	STDCALL(DXCore::GetCommandList()->BuildRaytracingAccelerationStructure(m_AccelerationDescTop.get(), 0, nullptr));
 }
 
 void RayTracingManager::BuildBottomAcceleration(
