@@ -100,12 +100,12 @@ void Engine::Run() noexcept
 void Engine::CreateConsole() noexcept
 {
 	AllocConsole() && "Unable to allocate console";
-	freopen("CONIN$", "r", stdin);
-	freopen("CONOUT$", "w", stdout);
-	freopen("CONOUT$", "w", stderr);
+	DBG_ASSERT(freopen("CONIN$", "r", stdin), "Could not freopen stdin.");
+	DBG_ASSERT(freopen("CONOUT$", "w", stdout), "Could not freopen stdout.");
+	DBG_ASSERT(freopen("CONOUT$", "w", stderr), "Could not freopen stderr.");
 }
 
-void Engine::RenderMiscWindow(uint32_t currentFramesPerSecond, float currentFrameTime) noexcept
+void Engine::RenderMiscWindow(uint64_t currentFramesPerSecond, float currentFrameTime) noexcept
 {
 	ImGui::Begin("Miscellaneous");
 	static float cameraSpeed = 40.0f;

@@ -13,7 +13,6 @@ struct VP
 struct InverseVP
 {
 	DirectX::XMFLOAT4X4 InverseVPMatrix;
-	DirectX::XMFLOAT2 elementsP;
 };
 
 struct World
@@ -41,12 +40,12 @@ private:
 	Microsoft::WRL::ComPtr<ID3DBlob> LoadCSO(const std::wstring& filepath) noexcept;
 private:
 	uint32_t m_CurrentBackBufferIndex{0u};
-	uint64_t m_FrameFenceValues[NR_OF_FRAMES];
+	uint64_t m_FrameFenceValues[NR_OF_FRAMES] = {};
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSO;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pDepthBuffer;
 	std::unique_ptr<DescriptorHeap> m_pDSVDescriptorHeap;
 
-	D3D12_VIEWPORT m_ViewPort;
-	RECT m_ScissorRect;
+	D3D12_VIEWPORT m_ViewPort = {};
+	RECT m_ScissorRect = {};
 };

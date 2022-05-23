@@ -7,9 +7,6 @@ void RayTracingManager::Initialize(
 	uint32_t totalNrMeshes
 ) noexcept
 {
-	//Make sure to reset command memory before this. Vertex buffer needs to have a GPU address.
-	//Transition the vertexbuffer resource to non pixel shader resource before this aswell.
-
 	//Create the bottom level acceleration structure, send in the vertex data which consists of the local vertex data for all different models used.
 	//Only one instance of each model in this vertex buffer.
 	BuildBottomAcceleration(models);
@@ -80,18 +77,8 @@ void RayTracingManager::UpdateInstances(
 				m_InstancingDescs[index].Transform[2][2] = objectTransform._33;
 				m_InstancingDescs[index].Transform[2][3] = objectTransform._34;
 
-				/*
-				m_InstancingDescs[index].InstanceID = index;
-				m_InstancingDescs[index].InstanceMask = 0xFF;
-				m_InstancingDescs[index].InstanceContributionToHitGroupIndex = 0;
-				m_InstancingDescs[index].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
-				m_InstancingDescs[index].AccelerationStructure = ((m_ResultBuffersBottom[currentModelName])[i])->GetGPUVirtualAddress();
-				*/
 				index++;
 			}
-			//Only increment the index for each object, we do not want different meshes in the same object to have different indices.
-			//This is to be swapped to a material number in the future.
-
 		}
 	}
 
@@ -128,7 +115,6 @@ void RayTracingManager::BuildBottomAcceleration(
 	const std::unordered_map<std::string, std::shared_ptr<Model>>& models
 ) noexcept
 {
-	
 	//Create the descriptions of the different geometries.
 	D3D12_RAYTRACING_GEOMETRY_DESC geometryDescs[1] = {};
 	{
@@ -215,8 +201,6 @@ void RayTracingManager::BuildBottomAcceleration(
 			m_BottomBuffers++;
 		}
 	}
-	
-	//Add 1 geometryDesc element per other arbritary geometry.
 }
 
 void RayTracingManager::BuildTopAcceleration(
@@ -280,7 +264,6 @@ void RayTracingManager::BuildTopAcceleration(
 			}
 			//Only increment the index for each object, we do not want different meshes in the same object to have different indices.
 			//This is to be swapped to a material number in the future.
-			
 		}
 	}
 	

@@ -19,7 +19,6 @@ struct ObjectColor
 struct VPInverseBuffer
 {
     matrix VPInverseMatrix;
-    float2 elementsP;
 };
 
 struct CameraBuffer
@@ -44,12 +43,11 @@ static const float ambient = 0.2f;
 static const float specular = 0.6f;
 static const float diffuse = 0.7f;
 
-float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float3 cameraPos, float4 color, float rayTraceBool)
+float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float3 viewDir, float4 color, float rayTraceBool)
 {
     float dist = length(light.pos - outPosWorld.xyz);
     float attenuation = 1.0f / (1.0f + 0.0f * dist + 0.0001f * (dist * dist));
     float3 lightDir = normalize(light.pos - outPosWorld.xyz);
-    float3 viewDir = normalize(camera.pos - outPosWorld.xyz);
 
     //Ambient
     float3 ambientColor = ambient * light.col;
@@ -62,9 +60,7 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
 
         RayDesc ray;
         ray.Origin = outPosWorld.xyz;
-
         ray.Direction = normalize(light.pos - outPosWorld.xyz);
-        //ray.Direction = -ray.Direction;
         ray.TMin = 0.1f;
         ray.TMax = 10000.0f;
 
@@ -99,12 +95,13 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
 float4 main(in VS_OUT psIn) : SV_TARGET
 {
     float3 normal = normalize(psIn.outNormal);
+    float3 viewDir = normalize(camera.pos - psIn.outPosWorld.xyz);
 
     float3 result = float3(0.0f, 0.0f, 0.0f);
-    result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
-    result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
-    result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
-    result += CalculateLight(light4, psIn.outPosWorld, normal, camera.pos, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light3, psIn.outPosWorld, normal, viewDir, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light1, psIn.outPosWorld, normal, viewDir, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light2, psIn.outPosWorld, normal, viewDir, objectColor.color, camera.rayTraceBool);
+    result += CalculateLight(light4, psIn.outPosWorld, normal, viewDir, objectColor.color, camera.rayTraceBool);
 
     return float4(result, objectColor.color.w);
 }

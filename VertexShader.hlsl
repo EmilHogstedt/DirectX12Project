@@ -34,6 +34,6 @@ VS_OUT main(uint vertexID : SV_VertexID)
     
     vsOut.outPositionCS = mul(vsOut.outPosWorld, vpConstantBuffer.VPMatrix);
     vsOut.outNormal = normalize(mul(float4(normalize(input.inNormal), 0.0f), worldMatrix).xyz);
-    //vsOut.outNormal = normalize(input.inNormal);
+    
     return vsOut;
 }

@@ -70,8 +70,7 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	vpInverse = DirectX::XMMatrixInverse(&det, vpInverse);
 	vpInverse = DirectX::XMMatrixTranspose(vpInverse); //Is this needed?
 	DirectX::XMStoreFloat4x4(&vpInverseCBuffer.InverseVPMatrix, vpInverse);
-	vpInverseCBuffer.elementsP = DirectX::XMFLOAT2(pCamera->GetElement1PMatrix(), pCamera->GetElement2PMatrix());
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4 + 2, &vpInverseCBuffer, 0u));
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4, &vpInverseCBuffer, 0u));
 
 	DirectX::XMFLOAT3 cameraFloat3 = pCamera->GetPosition();
 	DirectX::XMFLOAT4 cameraFloat4 = DirectX::XMFLOAT4(cameraFloat3.x, cameraFloat3.y, cameraFloat3.z, (float)pCamera->GetRayTraceBool());
@@ -237,7 +236,7 @@ void Renderer::CreateRootSignature() noexcept
 
 	D3D12_ROOT_PARAMETER vpInversePS = {};
 	vpInversePS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	vpInversePS.Constants.Num32BitValues = 4 * 4 + 2; //The matrix + the 2 projection matrix elements.
+	vpInversePS.Constants.Num32BitValues = 4 * 4; //The matrix + the 2 projection matrix elements.
 	vpInversePS.Constants.ShaderRegister = 0u;
 	vpInversePS.Constants.RegisterSpace = 1u;
 	vpInversePS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
@@ -335,11 +334,6 @@ void Renderer::CreatePipelineStateObject() noexcept
 	//First we compile them using the dxc compiler.
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"VertexShader.hlsl", L"main", L"vs_6_5");
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"PixelShader.hlsl", L"main", L"ps_6_5");
-	//Then the CSO are loaded.
-	//Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob = LoadCSO(L"cso path here");
-	//COMPILE_FROM_FILE(L"VertexShader.hlsl", "main", "vs_6_5", vertexShaderBlob);
-	//Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBlob = LoadCSO(L"cso path here");
-	//COMPILE_FROM_FILE(L"PixelShader.hlsl", "main", "ps_6_5", pixelShaderBlob);
 
 	//We now create the Graphics Pipe line state, the PSO:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDescriptor = { 0 };

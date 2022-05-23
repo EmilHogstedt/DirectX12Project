@@ -32,4 +32,5 @@ private:
 	float m_TiltSensitivity;
 
 	bool m_RayTrace = true;
+	bool m_RayTraceReleased = true;
 };

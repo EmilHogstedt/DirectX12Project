@@ -217,12 +217,12 @@ private:
 #endif
 
 #define NR_OF_FRAMES 2
-#define NR_OF_BACKBUFFERS 2 
+#define NR_OF_BACKBUFFERS 2
 
 struct ConstantBufferView
 {
-	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, NR_OF_FRAMES> pResources;
-	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> SrcHandles;
-	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> DstHandles;
-	std::array<D3D12_GPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> GpuHandles;
+	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, NR_OF_FRAMES> pResources = {};
+	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> SrcHandles = {};
+	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> DstHandles = {};
+	std::array<D3D12_GPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> GpuHandles = {};
 };
