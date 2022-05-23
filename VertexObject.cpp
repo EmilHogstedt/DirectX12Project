@@ -57,7 +57,7 @@ void VertexObject::Update(float deltaTime)
 	case SPIN:
 	{
 		DirectX::XMVECTOR globalYAxis = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
+	
 		rotMatrix *= DirectX::XMMatrixRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), speed * deltaTime);
 		break;
 	}

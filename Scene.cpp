@@ -9,25 +9,39 @@ void Scene::Initialize()
 	std::default_random_engine generator(static_cast<UINT>(t_clock::now().time_since_epoch().count()));
 	std::uniform_real_distribution<float> distributionColor(0.0f, 1.0f);
 	//Create objects here.
-	AddVertexObject("Tri", DirectX::XMVectorSet(-10.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 10.0f, RESIZE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
-	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 90.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 20.0f, MOVEBACKANDFORTH, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
-	AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 100.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 20.0f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	//AddVertexObject("Tri", DirectX::XMVectorSet(-10.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 10.0f, RESIZE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	//AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 90.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 20.0f, MOVEBACKANDFORTH, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	//AddVertexObject("Rec", DirectX::XMVectorSet(10.0f, 0.0f, 100.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 20.0f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 
 	//AddVertexObject("Models/deer.obj", DirectX::XMVectorSet(0.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.01f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 	//AddVertexObject("Models/wolf.obj", DirectX::XMVectorSet(-50.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 0.05f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
-	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 2.0f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
-	AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(-20.0f, 0.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2, 0.0f, 0.0f), 2.0f, RESIZE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	//AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(50.0f, 0.0f, 80.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 2.0f, SPIN, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	
+
+
+	for (uint32_t i{ 0u }; i < 10000u; i++)
+	{
+		AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(-30.0f + i, 0.0f, 70.0f + i, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2, 0.0f, 0.0f), 2.0f, NONE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	//Create the "room"
 	//Floor
-	AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, -10.0f, 50.0f, 1.0f), DirectX::XMVectorSet((float)M_PI / 2.0f, 0.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-	//Wall behind
-	AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, 90.0f, -50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f));
-	//Wall in front
-	AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, 90.0f, 150.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f));
-	//Wall to the left
-	AddVertexObject("Rec", DirectX::XMVectorSet(-100.0f, 90.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)-M_PI / 2.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
-	//Wall to the right
-	AddVertexObject("Rec", DirectX::XMVectorSet(100.0f, 90.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+	//AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, -10.0f, 50.0f, 1.0f), DirectX::XMVectorSet((float)M_PI / 2.0f, 0.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	////Wall behind
+	//AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, 90.0f, -50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f));
+	////Wall in front
+	//AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, 90.0f, 150.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f));
+	////Wall to the left
+	//AddVertexObject("Rec", DirectX::XMVectorSet(-100.0f, 90.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)-M_PI / 2.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+	////Wall to the right
+	//AddVertexObject("Rec", DirectX::XMVectorSet(100.0f, 90.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
 
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
 	auto pCommandList = DXCore::GetCommandList();

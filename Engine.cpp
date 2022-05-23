@@ -12,9 +12,9 @@ void Engine::Initialize(const std::wstring& applicationName) noexcept
 	ImGuiManager::Initialize();
 
 	auto& memoryManager = MemoryManager::Get();
-	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 200'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
-	memoryManager.AddRangeForDescriptor("ShaderBindables", "TransformsRange", 25'000);
-	memoryManager.CreateNonShaderVisibleDescriptorHeap("Transforms", 25'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	memoryManager.CreateShaderVisibleDescriptorHeap("ShaderBindables", 100'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	memoryManager.AddRangeForDescriptor("ShaderBindables", "TransformsRange", 100'000);
+	memoryManager.CreateNonShaderVisibleDescriptorHeap("Transforms", 100'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	m_pScene = std::make_unique<Scene>();
 	m_pScene->Initialize();
@@ -74,7 +74,7 @@ void Engine::Run() noexcept
 
 
 		frameCount++;
-		if (frameCount == 2000 && startProfiling == false)
+		if (frameCount == 2'000 && startProfiling == false)
 		{
 			startProfiling = true;
 			frameCount = 0u;

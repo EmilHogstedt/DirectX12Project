@@ -16,20 +16,20 @@ struct ObjectColor
     float4 color;
 };
 
-struct VPInverseBuffer
-{
-    matrix VPInverseMatrix;
-    float2 elementsP;
-};
+//struct VPInverseBuffer
+//{
+//    matrix VPInverseMatrix;
+//    float2 elementsP;
+//};
 
 struct CameraBuffer
 {
     float3 pos;
 };
 
-RaytracingAccelerationStructure scene : register(t0, space1);
+//RaytracingAccelerationStructure scene : register(t0, space1);
 
-ConstantBuffer<VPInverseBuffer> vpInverseBuffer : register(b0, space1);
+//ConstantBuffer<VPInverseBuffer> vpInverseBuffer : register(b0, space1);
 ConstantBuffer<ObjectColor> objectColor : register(b1, space1);
 ConstantBuffer<CameraBuffer> camera : register(b2, space1);
 
@@ -71,11 +71,18 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
 float4 main(in VS_OUT psIn) : SV_TARGET
 {
     float3 normal = normalize(psIn.outNormal);
-
+ 
     float3 result = float3(0.0f, 0.0f, 0.0f);
-    result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color);
-    result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    for (int i = 0; i < 50; i++)
+    {
+        result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, float4(objectColor.color.x + (i / 100), objectColor.color.yzw));
+        result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, float4(objectColor.color.x + (i / 100), objectColor.color.yzw));
+        result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, float4(objectColor.color.x + (i / 100), objectColor.color.yzw));
+    }
+    
+    //result += CalculateLight(light3, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    //result += CalculateLight(light1, psIn.outPosWorld, normal, camera.pos, objectColor.color);
+    //result += CalculateLight(light2, psIn.outPosWorld, normal, camera.pos, objectColor.color);
 
     //Shadows with raytracing
     /*

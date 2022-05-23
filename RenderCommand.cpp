@@ -34,6 +34,8 @@ uint64_t RenderCommand::SignalFenceFromGPU() noexcept
 	return s_FenceValue;
 }
 
+static uint64_t counter = 0u;
+
 void RenderCommand::WaitForFenceValue(uint64_t fenceValue) noexcept
 {
 	if (DXCore::GetFence()->GetCompletedValue() < fenceValue)

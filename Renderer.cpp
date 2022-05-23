@@ -13,7 +13,6 @@ void Renderer::Initialize() noexcept
 	CreatePipelineStateObject();
 	CreateViewportAndScissorRect();
 
-
 	auto pCommandList = DXCore::GetCommandList();
 
 	HR(pCommandList->Close());
@@ -64,20 +63,20 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	DirectX::XMStoreFloat4x4(&vpMatrixCBuffer.VPMatrix, vpMatrix);
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(3u, 4*4, &vpMatrixCBuffer, 0u));
 
-	static InverseVP vpInverseCBuffer;
-	auto vpInverse = DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
-	DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(vpInverse);
-	vpInverse = DirectX::XMMatrixInverse(&det, vpInverse);
-	vpInverse = DirectX::XMMatrixTranspose(vpInverse); //Is this needed?
-	DirectX::XMStoreFloat4x4(&vpInverseCBuffer.InverseVPMatrix, vpInverse);
-	vpInverseCBuffer.elementsP = DirectX::XMFLOAT2(pCamera->GetElement1PMatrix(), pCamera->GetElement2PMatrix());
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4 + 2, &vpInverseCBuffer, 0u));
+	//static InverseVP vpInverseCBuffer;
+	//auto vpInverse = DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
+	//DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(vpInverse);
+	//vpInverse = DirectX::XMMatrixInverse(&det, vpInverse);
+	//vpInverse = DirectX::XMMatrixTranspose(vpInverse); //Is this needed?
+	//DirectX::XMStoreFloat4x4(&vpInverseCBuffer.InverseVPMatrix, vpInverse);
+	//vpInverseCBuffer.elementsP = DirectX::XMFLOAT2(pCamera->GetElement1PMatrix(), pCamera->GetElement2PMatrix());
+	//STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4 + 2, &vpInverseCBuffer, 0u));
 
 	auto cameraPos = DirectX::XMLoadFloat3(&(pCamera->GetPosition()));
-	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(7u, 3, &cameraPos, 0u));
+	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 3, &cameraPos, 0u));
 
 	//Raytracing accelerationstructure.
-	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
+	//STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
 }
 
 void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept
@@ -92,7 +91,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 		for (auto& object : modelInstances.second)
 		{
 			auto objectColor = DirectX::XMLoadFloat4(&(object->GetColor()));
-			STDCALL(pCommandList->SetGraphicsRoot32BitConstants(6u, 4, &objectColor, 0u));
+			STDCALL(pCommandList->SetGraphicsRoot32BitConstants(4u, 4, &objectColor, 0u));
 
 			const std::vector<std::unique_ptr<Mesh>>& objectMeshes = object->GetModel()->GetMeshes();
 			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
@@ -227,21 +226,21 @@ void Renderer::CreateRootSignature() noexcept
 	vpRootParameterVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 	rootParameters.push_back(vpRootParameterVS);
 
-	//For raytracing.
-	D3D12_ROOT_PARAMETER accelerationStructureSRVParameter = {};
-	accelerationStructureSRVParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
-	accelerationStructureSRVParameter.Descriptor.ShaderRegister = 0u;
-	accelerationStructureSRVParameter.Descriptor.RegisterSpace = 1u;
-	accelerationStructureSRVParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters.push_back(accelerationStructureSRVParameter);
-
-	D3D12_ROOT_PARAMETER vpInversePS = {};
-	vpInversePS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	vpInversePS.Constants.Num32BitValues = 4 * 4 + 2; //The matrix + the 2 projection matrix elements.
-	vpInversePS.Constants.ShaderRegister = 0u;
-	vpInversePS.Constants.RegisterSpace = 1u;
-	vpInversePS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters.push_back(vpInversePS);
+	////For raytracing.
+	//D3D12_ROOT_PARAMETER accelerationStructureSRVParameter = {};
+	//accelerationStructureSRVParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	//accelerationStructureSRVParameter.Descriptor.ShaderRegister = 0u;
+	//accelerationStructureSRVParameter.Descriptor.RegisterSpace = 1u;
+	//accelerationStructureSRVParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	//rootParameters.push_back(accelerationStructureSRVParameter);
+	//
+	//D3D12_ROOT_PARAMETER vpInversePS = {};
+	//vpInversePS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	//vpInversePS.Constants.Num32BitValues = 4 * 4 + 2; //The matrix + the 2 projection matrix elements.
+	//vpInversePS.Constants.ShaderRegister = 0u;
+	//vpInversePS.Constants.RegisterSpace = 1u;
+	//vpInversePS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	//rootParameters.push_back(vpInversePS);
 
 	D3D12_ROOT_PARAMETER objectColorPS = {};
 	objectColorPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
