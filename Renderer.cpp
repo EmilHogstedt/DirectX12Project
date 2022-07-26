@@ -26,7 +26,6 @@ void Renderer::Initialize() noexcept
 void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
 	auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
-	frameInFlightIndex = m_FrameIndex;
 
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[frameInFlightIndex];
 	auto pCommandList = DXCore::GetCommandList();
@@ -91,7 +90,6 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentFrameInFlightIndex();
-	index = m_FrameIndex;
 	for (auto& modelInstances : vertexObjects)
 	{
 		for (auto& object : modelInstances.second)
