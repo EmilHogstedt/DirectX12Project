@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Scene.h"
+#include "Window.h"
 
 void Scene::Initialize() noexcept
 {
@@ -87,14 +88,14 @@ void Scene::Initialize() noexcept
 
 void Scene::Update(bool rayTraceBool, float deltaTime) noexcept
 {
-	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
+	auto pCommandAllocator = DXCore::GetCommandAllocators()[Window::Get().GetCurrentFrameInFlightIndex()];
 	auto pCommandList = DXCore::GetCommandList();
 	auto pDevice = DXCore::GetDevice();
 
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
-	//Update all objets.
+	//Update all objects.
 	for (auto& modelInstances : m_Objects)
 	{
 		for (auto& object : modelInstances.second)
@@ -117,7 +118,6 @@ void Scene::Update(bool rayTraceBool, float deltaTime) noexcept
 	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
-
 }
 
 void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType, DirectX::XMFLOAT4 color)
@@ -174,5 +174,4 @@ void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, Direc
 	
 	//Increment the total number of objects.
 	m_TotalObjects++;
-	
 }

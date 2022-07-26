@@ -91,7 +91,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentFrameInFlightIndex();
-	//index = m_FrameIndex;
+	index = m_FrameIndex;
 	for (auto& modelInstances : vertexObjects)
 	{
 		for (auto& object : modelInstances.second)

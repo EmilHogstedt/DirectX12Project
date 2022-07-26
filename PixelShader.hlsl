@@ -27,9 +27,9 @@ struct CameraBuffer
     float rayTraceBool;
 };
 
-//RaytracingAccelerationStructure scene : register(t0, space1);
+RaytracingAccelerationStructure scene : register(t0, space1);
 
-//ConstantBuffer<VPInverseBuffer> vpInverseBuffer : register(b0, space1);
+ConstantBuffer<VPInverseBuffer> vpInverseBuffer : register(b0, space1);
 ConstantBuffer<ObjectColor> objectColor : register(b1, space1);
 ConstantBuffer<CameraBuffer> camera : register(b2, space1);
 
