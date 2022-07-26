@@ -18,8 +18,6 @@ void Renderer::Initialize() noexcept
 	auto pCommandList = DXCore::GetCommandList();
 
 	HR(pCommandList->Close());
-	//ID3D12CommandList* commandLists[] = { pCommandList.Get() };
-	//STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
 	HR(DXCore::GetCommandAllocators()[0]->Reset());
 	HR(pCommandList->Reset(DXCore::GetCommandAllocators()[0].Get(), nullptr));
@@ -27,7 +25,6 @@ void Renderer::Initialize() noexcept
 
 void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
-
 	auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
 	frameInFlightIndex = m_FrameIndex;
 
@@ -122,7 +119,6 @@ void Renderer::End() noexcept
 {
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
-	auto frameIndex = Window::Get().GetCurrentFrameInFlightIndex();
 	//Present:
 	{
 		RenderCommand::TransitionResource(pBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -135,12 +131,7 @@ void Renderer::End() noexcept
 		Window::Get().Present();
 		m_CurrentBackBufferIndex = Window::Get().GetCurrentBackbufferIndex();
 
-		uint64_t tempVal = m_FrameFenceValues[frameIndex];
-		const UINT64 currentFenceValue = m_FrameFenceValues[m_FrameIndex];
 		WaitAndSync();
-
-		//m_FrameFenceValues[frameIndex] =  RenderCommand::SignalFenceFromGPU();
-		//RenderCommand::WaitForFenceValue(m_FrameFenceValues[frameIndex]);
 	}
 }
 
@@ -148,7 +139,6 @@ void Renderer::End() noexcept
 void Renderer::OnShutDown() noexcept
 {
 	RenderCommand::Flush();
-	//Renderer::WaitForGpu();
 }
 
 // Wait for pending GPU work to complete.
@@ -172,7 +162,7 @@ void Renderer::WaitAndSync()
 	HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), currentFenceValue));
 
 	// Update the frame index.
-	m_FrameIndex = Window::Get().GetCurrentBackbufferIndex();
+	m_FrameIndex = Window::Get().GetCurrentBackbufferIndex() % NR_OF_FRAMES;
 	
 	// If the next frame is not ready to be rendered yet, wait until it is ready.
 	if (DXCore::GetFence()->GetCompletedValue() < m_FrameFenceValues[m_FrameIndex])

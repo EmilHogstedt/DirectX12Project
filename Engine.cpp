@@ -40,7 +40,7 @@ void Engine::Run() noexcept
 	float secondTracker = 0.0f;
 	bool startProfiling = false;
 	m_pRenderer->WaitForGpu();
-	DXCore::GetCommandList()->Close();
+	//HR(DXCore::GetCommandList()->Close());
 	while (s_Window.IsRunning())
 	{
 		{
