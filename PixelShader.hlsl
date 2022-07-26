@@ -60,28 +60,28 @@ float3 CalculateLight(PointLight light, float4 outPosWorld, float3 normal, float
     ambientColor = ambientColor * color.xyz * attenuation;
 
     //Shadows with raytracing
-    if (rayTraceBool)
-    {
-        RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
-
-        RayDesc ray;
-        ray.Origin = outPosWorld.xyz;
-        ray.Direction = normalize(light.pos - outPosWorld.xyz);
-        ray.TMin = 0.1f;
-        ray.TMax = 10000.0f;
-
-        query.TraceRayInline(scene, 0, 0xFF, ray);
-        query.Proceed();
-
-
-        if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
-        {
-            if (query.CommittedRayT() < dist)
-            {
-                return ambientColor;
-            }
-        }
-    }
+    //if (rayTraceBool)
+    //{
+    //    RayQuery<RAY_FLAG_CULL_NON_OPAQUE | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
+    //
+    //    RayDesc ray;
+    //    ray.Origin = outPosWorld.xyz;
+    //    ray.Direction = normalize(light.pos - outPosWorld.xyz);
+    //    ray.TMin = 0.1f;
+    //    ray.TMax = 10000.0f;
+    //
+    //    query.TraceRayInline(scene, 0, 0xFF, ray);
+    //    query.Proceed();
+    //
+    //
+    //    if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
+    //    {
+    //        if (query.CommittedRayT() < dist)
+    //        {
+    //            return ambientColor;
+    //        }
+    //    }
+    //}
     
     //Diffuse
     float diff = max(dot(lightDir, normal), 0.0f);
