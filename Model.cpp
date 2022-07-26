@@ -3,8 +3,6 @@
 
 void Model::Initialize(const std::string path) noexcept
 {
-	//Use assimp to load the model.
-
 	m_Name = path;
 	if (path == "Tri")
 	{
@@ -161,6 +159,5 @@ void Model::ProcessMesh(aiMesh* mesh)
 			indices.push_back(face.mIndices[j]);
 		}
 	}
-
 	m_Meshes.push_back(std::make_unique<Mesh>(vertices, indices));
 }

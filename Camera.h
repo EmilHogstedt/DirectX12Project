@@ -14,6 +14,8 @@ public:
 	[[nodiscard]] constexpr DirectX::XMFLOAT3& GetPosition() noexcept { return m_Position; }
 	void OnMouseMove() noexcept;
 	void SetCameraSpeed(float speed) noexcept;
+
+	bool GetRayTraceBool() const noexcept { return m_RayTrace; }
 private:
 	DirectX::XMFLOAT3 m_Position;
 	DirectX::XMFLOAT3 m_UpVector;
@@ -28,4 +30,7 @@ private:
 	float m_Pitch;
 	float m_CameraSpeed;
 	float m_TiltSensitivity;
+
+	bool m_RayTrace = true;
+	bool m_RayTraceReleased = true;
 };

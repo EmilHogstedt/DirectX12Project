@@ -13,7 +13,6 @@ struct VP
 struct InverseVP
 {
 	DirectX::XMFLOAT4X4 InverseVPMatrix;
-	DirectX::XMFLOAT2 elementsP;
 };
 
 struct World
@@ -28,7 +27,7 @@ public:
 	~Renderer() noexcept { RenderCommand::s_Renderer = nullptr; };
 	void Initialize() noexcept;
 	void Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept;
-	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
+	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
 	void WaitAndSync();
@@ -43,7 +42,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3DBlob> LoadCSO(const std::wstring& filepath) noexcept;
 private:
 	uint32_t m_CurrentBackBufferIndex{0u};
-	uint64_t m_FrameFenceValues[NR_OF_FRAMES];
+	uint64_t m_FrameFenceValues[NR_OF_FRAMES] = {};
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSO;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_pDepthBuffer;

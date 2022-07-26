@@ -31,12 +31,12 @@ void RenderCommand::ClearDepth(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorhandle, 
 	STDCALL(DXCore::GetCommandList()->ClearDepthStencilView(cpuDescriptorhandle, D3D12_CLEAR_FLAG_DEPTH, depthValue, 0u, 0u, nullptr));
 }
 
-uint64_t RenderCommand::SignalFenceFromGPU() noexcept
-{
-	s_FenceValue++;
-	//HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), s_FenceValue));
-	return s_FenceValue;
-}
+//uint64_t RenderCommand::SignalFenceFromGPU() noexcept
+//{
+//	s_FenceValue++;
+//	//HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), s_FenceValue));
+//	return s_FenceValue;
+//}
 
 static uint64_t counter = 0u;
 

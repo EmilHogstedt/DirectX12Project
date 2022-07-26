@@ -221,8 +221,8 @@ private:
 
 struct ConstantBufferView
 {
-	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, NR_OF_FRAMES> pResources;
-	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> SrcHandles;
-	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> DstHandles;
-	std::array<D3D12_GPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> GpuHandles;
+	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, NR_OF_FRAMES> pResources = {};
+	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> SrcHandles = {};
+	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> DstHandles = {};
+	std::array<D3D12_GPU_DESCRIPTOR_HANDLE, NR_OF_FRAMES> GpuHandles = {};
 };

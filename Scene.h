@@ -10,7 +10,8 @@ public:
 	~Scene() noexcept = default;
 
 	//Initializes all objects in the scene.
-	void Initialize();
+	void Initialize() noexcept;
+	void Update(bool rayTraceBool, float deltaTime) noexcept;
 
 	const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& GetCulledVertexObjects() const { return m_Objects; }
 	D3D12_GPU_VIRTUAL_ADDRESS GetAccelerationStructureGPUAddress() const { return m_pRayTracingManager->GetTopLevelAccelerationStructure(); }

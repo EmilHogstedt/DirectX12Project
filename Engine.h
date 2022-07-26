@@ -13,7 +13,7 @@ public:
 
 private:
 	void CreateConsole() noexcept;
-	void RenderMiscWindow(uint32_t currentFramesPerSecond, float currentFrameTime) noexcept;
+	void RenderMiscWindow(uint64_t currentFramesPerSecond, float currentFrameTime) noexcept;
 private:
 	std::wstring m_AppName;
 	std::unique_ptr<Renderer> m_pRenderer;

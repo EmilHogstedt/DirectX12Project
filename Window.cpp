@@ -222,5 +222,6 @@ void Window::OnUpdate() noexcept
 void Window::Present() noexcept
 {
 	HR(m_pSwapChain->Present(0u, DXGI_PRESENT_ALLOW_TEARING));
+	//m_pSwapChain->Present(0u, DXGI_PRESENT_ALLOW_TEARING);
 	m_FrameInFlight = (m_FrameInFlight + 1) % NR_OF_FRAMES;
 }

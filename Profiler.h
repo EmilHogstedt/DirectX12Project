@@ -2,8 +2,8 @@
 
 struct ProfilerData
 {
-	std::string ContextName;
-	double Duration;
+	std::string ContextName = "";
+	double Duration = 0.0f;
 };
 
 template<typename LambdaFunction>

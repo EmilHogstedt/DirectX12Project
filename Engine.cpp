@@ -40,14 +40,15 @@ void Engine::Run() noexcept
 	float secondTracker = 0.0f;
 	bool startProfiling = false;
 	m_pRenderer->WaitForGpu();
-	//HR(DXCore::GetCommandList()->Close());
+	HR(DXCore::GetCommandList()->Close());
 	while (s_Window.IsRunning())
 	{
 		{
 			Profiler profiler("Render loop", [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
 
-			m_pRenderer->Begin(m_pCamera.get(), 30);
-			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
+			m_pScene->Update(m_pCamera->GetRayTraceBool(), deltaTime);
+			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
+			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects());
 
 			{
 				ImGuiManager::Begin();
@@ -103,12 +104,12 @@ void Engine::Run() noexcept
 void Engine::CreateConsole() noexcept
 {
 	AllocConsole() && "Unable to allocate console";
-	freopen("CONIN$", "r", stdin);
-	freopen("CONOUT$", "w", stdout);
-	freopen("CONOUT$", "w", stderr);
+	DBG_ASSERT(freopen("CONIN$", "r", stdin), "Could not freopen stdin.");
+	DBG_ASSERT(freopen("CONOUT$", "w", stdout), "Could not freopen stdout.");
+	DBG_ASSERT(freopen("CONOUT$", "w", stderr), "Could not freopen stderr.");
 }
 
-void Engine::RenderMiscWindow(uint32_t currentFramesPerSecond, float currentFrameTime) noexcept
+void Engine::RenderMiscWindow(uint64_t currentFramesPerSecond, float currentFrameTime) noexcept
 {
 	ImGui::Begin("Miscellaneous");
 	static float cameraSpeed = 40.0f;
@@ -118,8 +119,8 @@ void Engine::RenderMiscWindow(uint32_t currentFramesPerSecond, float currentFram
 	ImGui::Text("Frame time: %.5f ms", currentFrameTime);
 	ImGui::Text("Render pass time (Average): %.5f ms", m_CurrentAverageRenderTime);
 	ImGui::Text("Render pass time (Total summed average): %.5f ms", m_AverageRenderTimeSinceStart);
-	//ImGui::Text("Mesh Count: %d", m_pScene->GetTotalNrOfMeshes());
-	//ImGui::Text("Vertex Count: %d", m_pScene->GetTotalNrOfVertices());
-	//ImGui::Text("Index Count: %d", m_pScene->GetTotalNrOfIndices());
+	ImGui::Text("Mesh Count: %d", m_pScene->GetTotalNrOfMeshes());
+	ImGui::Text("Vertex Count: %d", m_pScene->GetTotalNrOfVertices());
+	ImGui::Text("Index Count: %d", m_pScene->GetTotalNrOfIndices());
 	ImGui::End();
 }

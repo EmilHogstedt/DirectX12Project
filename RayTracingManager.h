@@ -15,8 +15,11 @@ public:
 		uint32_t totalNrMeshes
 	) noexcept;
 
-	void Refit() noexcept;
-	void Rebuild() noexcept;
+	void UpdateInstances(
+		const std::unordered_map<std::string, std::shared_ptr<Model>>& models,
+		const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& objects,
+		uint32_t totalNrMeshes
+	) noexcept;
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetTopLevelAccelerationStructure() const { return m_pResultBufferTop->GetGPUVirtualAddress(); }
 private:
