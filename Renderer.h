@@ -24,13 +24,15 @@ struct World
 class Renderer
 {
 public:
-	Renderer() noexcept = default;
-	~Renderer() noexcept = default;
+	Renderer() noexcept { RenderCommand::s_Renderer = this; }
+	~Renderer() noexcept { RenderCommand::s_Renderer = nullptr; };
 	void Initialize() noexcept;
 	void Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept;
 	void Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects, float deltaTime) noexcept;
 	void End() noexcept;
 	void OnShutDown() noexcept;
+	void WaitAndSync();
+	void WaitForGpu();
 private:
 	void CreateDepthBuffer() noexcept;
 	void CreateRootSignature() noexcept;
@@ -49,4 +51,5 @@ private:
 
 	D3D12_VIEWPORT m_ViewPort;
 	RECT m_ScissorRect;
+	uint64_t m_FrameIndex = 0u;
 };

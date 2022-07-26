@@ -5,6 +5,8 @@
 #include "RenderCommand.h"
 #include "Camera.h"
 #include "MemoryManager.h"
+#define USE_PIX
+#include "pix3.h"
 
 void Renderer::Initialize() noexcept
 {
@@ -16,14 +18,18 @@ void Renderer::Initialize() noexcept
 	auto pCommandList = DXCore::GetCommandList();
 
 	HR(pCommandList->Close());
-	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
-	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
+	//ID3D12CommandList* commandLists[] = { pCommandList.Get() };
+	//STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
+	HR(DXCore::GetCommandAllocators()[0]->Reset());
+	HR(pCommandList->Reset(DXCore::GetCommandAllocators()[0].Get(), nullptr));
 }
 
 void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
+
 	auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
+	frameInFlightIndex = m_FrameIndex;
 
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[frameInFlightIndex];
 	auto pCommandList = DXCore::GetCommandList();
@@ -36,6 +42,8 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+
+	PIXBeginEvent(DXCore::GetCommandList().Get(), 200, "Render Loop");
 
 	//Clear current back buffer & depth buffer:
 	RenderCommand::TransitionResource(pBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -85,7 +93,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 
 	auto pCommandList = DXCore::GetCommandList();
 	auto index = Window::Get().GetCurrentFrameInFlightIndex();
-
+	//index = m_FrameIndex;
 	for (auto& modelInstances : vertexObjects)
 	{
 		for (auto& object : modelInstances.second)
@@ -115,27 +123,68 @@ void Renderer::End() noexcept
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
 	auto frameIndex = Window::Get().GetCurrentFrameInFlightIndex();
-
 	//Present:
 	{
 		RenderCommand::TransitionResource(pBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+		PIXEndEvent(DXCore::GetCommandList().Get());
 		HR(pCommandList->Close());
 
 		ID3D12CommandList* commandLists[] = { pCommandList.Get() };
 		STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 
-		m_FrameFenceValues[frameIndex] =  RenderCommand::SignalFenceFromGPU();
 		Window::Get().Present();
-
 		m_CurrentBackBufferIndex = Window::Get().GetCurrentBackbufferIndex();
 
-		RenderCommand::WaitForFenceValue(m_FrameFenceValues[frameIndex]);
+		uint64_t tempVal = m_FrameFenceValues[frameIndex];
+		const UINT64 currentFenceValue = m_FrameFenceValues[m_FrameIndex];
+		WaitAndSync();
+
+		//m_FrameFenceValues[frameIndex] =  RenderCommand::SignalFenceFromGPU();
+		//RenderCommand::WaitForFenceValue(m_FrameFenceValues[frameIndex]);
 	}
 }
+
 
 void Renderer::OnShutDown() noexcept
 {
 	RenderCommand::Flush();
+	//Renderer::WaitForGpu();
+}
+
+// Wait for pending GPU work to complete.
+void Renderer::WaitForGpu()
+{
+	// Schedule a Signal command in the queue.
+	HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), m_FrameFenceValues[m_FrameIndex]));
+
+	// Wait until the fence has been processed.
+	HR(DXCore::GetFence()->SetEventOnCompletion(m_FrameFenceValues[m_FrameIndex], DXCore::GetFenceEvent()));
+	WaitForSingleObjectEx(DXCore::GetFenceEvent(), INFINITE, FALSE);
+
+	// Increment the fence value for the current frame.
+	m_FrameFenceValues[m_FrameIndex]++;
+}
+
+void Renderer::WaitAndSync()
+{
+	// Schedule a Signal command in the queue.
+	const UINT64 currentFenceValue = m_FrameFenceValues[m_FrameIndex];
+	HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), currentFenceValue));
+
+	// Update the frame index.
+	m_FrameIndex = Window::Get().GetCurrentBackbufferIndex();
+	
+	// If the next frame is not ready to be rendered yet, wait until it is ready.
+	if (DXCore::GetFence()->GetCompletedValue() < m_FrameFenceValues[m_FrameIndex])
+	{
+		PIXBeginEvent(400, "Sync");
+		HR(DXCore::GetFence()->SetEventOnCompletion(m_FrameFenceValues[m_FrameIndex], DXCore::GetFenceEvent()));
+		WaitForSingleObjectEx(DXCore::GetFenceEvent(), INFINITE, FALSE);
+		PIXEndEvent();
+	}
+
+	// Set the fence value for the next frame.
+	m_FrameFenceValues[m_FrameIndex] = currentFenceValue + 1;
 }
 
 void Renderer::CreateDepthBuffer() noexcept

@@ -3,6 +3,8 @@
 #include "DXCore.h"
 #include "Window.h"
 #include "ImGuiManager.h"
+#define USE_PIX
+#include "pix3.h"
 
 void Engine::Initialize(const std::wstring& applicationName) noexcept
 {
@@ -16,11 +18,10 @@ void Engine::Initialize(const std::wstring& applicationName) noexcept
 	memoryManager.AddRangeForDescriptor("ShaderBindables", "TransformsRange", 100'000);
 	memoryManager.CreateNonShaderVisibleDescriptorHeap("Transforms", 100'000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	m_pScene = std::make_unique<Scene>();
-	m_pScene->Initialize();
 	m_pRenderer = std::make_unique<Renderer>();
 	m_pRenderer->Initialize();
-
+	m_pScene = std::make_unique<Scene>();
+	m_pScene->Initialize();
 	DirectX::XMFLOAT3 cameraStartPosition = DirectX::XMFLOAT3(0.0f, 0.0f, -5.0f);
 	auto [width, height] = Window::Get().GetDimensions();
 	m_pCamera = std::make_unique<Camera>(cameraStartPosition, width, height);
@@ -38,12 +39,14 @@ void Engine::Run() noexcept
 	float currentFrameTime = 0.0f;
 	float secondTracker = 0.0f;
 	bool startProfiling = false;
+	m_pRenderer->WaitForGpu();
+	DXCore::GetCommandList()->Close();
 	while (s_Window.IsRunning())
 	{
 		{
 			Profiler profiler("Render loop", [&](ProfilerData profilerData) {ProfilerManager::ProfilerDatas.emplace_back(profilerData); });
 
-			m_pRenderer->Begin(m_pCamera.get(), m_pScene->GetAccelerationStructureGPUAddress());
+			m_pRenderer->Begin(m_pCamera.get(), 30);
 			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects(), deltaTime);
 
 			{
@@ -55,6 +58,7 @@ void Engine::Run() noexcept
 			}
 			m_pRenderer->End();
 		}
+
 		m_pCamera->Update(deltaTime);
 		s_Window.OnUpdate();
 
@@ -114,8 +118,8 @@ void Engine::RenderMiscWindow(uint32_t currentFramesPerSecond, float currentFram
 	ImGui::Text("Frame time: %.5f ms", currentFrameTime);
 	ImGui::Text("Render pass time (Average): %.5f ms", m_CurrentAverageRenderTime);
 	ImGui::Text("Render pass time (Total summed average): %.5f ms", m_AverageRenderTimeSinceStart);
-	ImGui::Text("Mesh Count: %d", m_pScene->GetTotalNrOfMeshes());
-	ImGui::Text("Vertex Count: %d", m_pScene->GetTotalNrOfVertices());
-	ImGui::Text("Index Count: %d", m_pScene->GetTotalNrOfIndices());
+	//ImGui::Text("Mesh Count: %d", m_pScene->GetTotalNrOfMeshes());
+	//ImGui::Text("Vertex Count: %d", m_pScene->GetTotalNrOfVertices());
+	//ImGui::Text("Index Count: %d", m_pScene->GetTotalNrOfIndices());
 	ImGui::End();
 }

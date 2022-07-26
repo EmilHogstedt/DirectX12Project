@@ -1,4 +1,5 @@
 #pragma once
+class Renderer;
 class RenderCommand
 {
 public:
@@ -8,6 +9,7 @@ public:
 	[[nodiscard]] static uint64_t SignalFenceFromGPU() noexcept;
 	static void WaitForFenceValue(uint64_t fenceValue) noexcept;
 	static void Flush() noexcept;
+	static Renderer* s_Renderer;
 private:
 	RenderCommand() noexcept = default;
 	~RenderCommand() noexcept = default;

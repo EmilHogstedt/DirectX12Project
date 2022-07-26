@@ -19,7 +19,7 @@ void Scene::Initialize()
 	
 
 
-	for (uint32_t i{ 0u }; i < 10000u; i++)
+	for (uint32_t i{ 0u }; i < 1000u; i++)
 	{
 		AddVertexObject("Models/Shark.obj", DirectX::XMVectorSet(-30.0f + i, 0.0f, 70.0f + i, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2, 0.0f, 0.0f), 2.0f, NONE, DirectX::XMFLOAT4(distributionColor(generator), distributionColor(generator), distributionColor(generator), 1.0f));
 	}
@@ -52,17 +52,17 @@ void Scene::Initialize()
 	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
 	RenderCommand::Flush();
 	
-	HR(pCommandAllocator->Reset());
-	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+	//HR(pCommandAllocator->Reset());
+	//HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+	//
+	//m_pRayTracingManager->Initialize(m_UniqueModels, m_Objects, m_TotalMeshes);
+	//
+	//HR(pCommandList->Close());
+	//STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
+	//RenderCommand::Flush();
 
-	m_pRayTracingManager->Initialize(m_UniqueModels, m_Objects, m_TotalMeshes);
-
-	HR(pCommandList->Close());
-	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
-	RenderCommand::Flush();
-
-	HR(pCommandAllocator->Reset());
-	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+	//HR(pCommandAllocator->Reset());
+	//HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 }
 
 void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType, DirectX::XMFLOAT4 color)

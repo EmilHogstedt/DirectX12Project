@@ -1,8 +1,12 @@
 #include "pch.h"
 #include "RenderCommand.h"
 #include "DXCore.h"
+#define USE_PIX
+#include "pix3.h"
+#include "Renderer.h"
 
 uint64_t RenderCommand::s_FenceValue{ 0u };
+Renderer* RenderCommand::s_Renderer{ nullptr };
 
 void RenderCommand::TransitionResource(const Microsoft::WRL::ComPtr<ID3D12Resource> pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) noexcept
 {
@@ -30,7 +34,7 @@ void RenderCommand::ClearDepth(D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorhandle, 
 uint64_t RenderCommand::SignalFenceFromGPU() noexcept
 {
 	s_FenceValue++;
-	HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), s_FenceValue));
+	//HR(DXCore::GetCommandQueue()->Signal(DXCore::GetFence().Get(), s_FenceValue));
 	return s_FenceValue;
 }
 
@@ -38,8 +42,10 @@ static uint64_t counter = 0u;
 
 void RenderCommand::WaitForFenceValue(uint64_t fenceValue) noexcept
 {
+	PIXBeginEvent(400, "Sync");
 	if (DXCore::GetFence()->GetCompletedValue() < fenceValue)
 	{
+		PIXBeginEvent(400, "Wait");
 		HR(DXCore::GetFence()->SetEventOnCompletion(fenceValue, DXCore::GetFenceEvent()));
 #if defined (_DEBUG) 
 		DWORD retVal{ ::WaitForSingleObject(DXCore::GetFenceEvent(), INFINITE) };
@@ -47,11 +53,15 @@ void RenderCommand::WaitForFenceValue(uint64_t fenceValue) noexcept
 #else
 		::WaitForSingleObject(DXCore::GetFenceEvent(), INFINITE);
 #endif
+		PIXEndEvent();
 	}
+	PIXEndEvent();
 }
 
 void RenderCommand::Flush() noexcept
 {
-	uint64_t fenceValue = SignalFenceFromGPU();
-	WaitForFenceValue(fenceValue);
+	s_Renderer->WaitForGpu();
+
+	//uint64_t fenceValue = SignalFenceFromGPU();
+	//WaitForFenceValue(fenceValue);
 }
