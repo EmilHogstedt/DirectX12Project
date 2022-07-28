@@ -39,6 +39,7 @@ struct ProfilerManager
 {
 	static std::vector<ProfilerData> ProfilerDatas;
 	static std::vector<ProfilerData> AllProfilerDatas;
+	static double m_SummedDurationOverFrames;
 	static double m_CurrentAverageDuration;
 	static double m_AverageDurationSinceStart;
 	static uint32_t m_MaxMeasurements;
@@ -52,6 +53,7 @@ struct ProfilerManager
 	{
 		m_CurrentAverageDuration = 0.0f;
 		m_AverageDurationSinceStart = 0.0f;
+		m_SummedDurationOverFrames = 0u;
 		for (uint32_t i{ 0u }; i < ProfilerDatas.size(); ++i)
 		{
 			m_CurrentAverageDuration += ProfilerDatas[i].Duration;
@@ -61,6 +63,7 @@ struct ProfilerManager
 		{
 			m_AverageDurationSinceStart += AllProfilerDatas[i].Duration;
 		}
+		m_SummedDurationOverFrames = m_CurrentAverageDuration;
 		m_CurrentAverageDuration /= ProfilerDatas.size();
 		m_AverageDurationSinceStart /= AllProfilerDatas.size();
 		m_CurrentMeasureNr++;

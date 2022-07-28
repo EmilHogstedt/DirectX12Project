@@ -25,10 +25,10 @@ void Renderer::Initialize() noexcept
 
 void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
-	auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
-	frameInFlightIndex = m_FrameIndex;
+	//auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
+	//frameInFlightIndex = m_FrameIndex;
 
-	auto pCommandAllocator = DXCore::GetCommandAllocators()[frameInFlightIndex];
+	auto pCommandAllocator = DXCore::GetCommandAllocators()[m_FrameIndex];
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
 
@@ -37,8 +37,8 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	backBufferDescriptorHandle.ptr += m_CurrentBackBufferIndex * pBackBufferRTVDescHeap->GetDescriptorTypeSize();
 	auto depthBufferDSVHandle = m_pDSVDescriptorHeap->GetCPUStartHandle();
 
-	HR(pCommandAllocator->Reset());
-	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+	//HR(pCommandAllocator->Reset());
+	//HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
 	PIXBeginEvent(DXCore::GetCommandList().Get(), 200, "Render Loop");
 
@@ -90,8 +90,8 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 	static float speed = 1.0f;
 
 	auto pCommandList = DXCore::GetCommandList();
-	auto index = Window::Get().GetCurrentFrameInFlightIndex();
-	index = m_FrameIndex;
+	//auto index = Window::Get().GetCurrentFrameInFlightIndex();
+	//index = m_FrameIndex;
 	for (auto& modelInstances : vertexObjects)
 	{
 		for (auto& object : modelInstances.second)
@@ -103,7 +103,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
 			{
 				auto& cbv = object->GetTransformConstantBufferView();
-				auto gpuHandle = cbv.GpuHandles[index];
+				auto gpuHandle = cbv.GpuHandles[m_FrameIndex];
 
 				STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
 				STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, objectMeshes[i]->GetVertexBufferGPUAddress()));
