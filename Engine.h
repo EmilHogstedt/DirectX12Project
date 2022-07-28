@@ -22,4 +22,5 @@ private:
 
 	double m_CurrentAverageRenderTime = 0.0f;
 	double m_AverageRenderTimeSinceStart = 0.0f;
+	double m_SummedDurationOverFrames = 0.0f;
 };

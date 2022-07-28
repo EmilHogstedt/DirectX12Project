@@ -25,9 +25,7 @@ void Renderer::Initialize() noexcept
 
 void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerationStructure) noexcept
 {
-	auto frameInFlightIndex = Window::Get().GetCurrentFrameInFlightIndex();
-
-	auto pCommandAllocator = DXCore::GetCommandAllocators()[frameInFlightIndex];
+	auto pCommandAllocator = DXCore::GetCommandAllocators()[m_FrameIndex];
 	auto pCommandList = DXCore::GetCommandList();
 	auto pBackBuffer = Window::Get().GetBackBuffers()[m_CurrentBackBufferIndex];
 
@@ -36,10 +34,7 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	backBufferDescriptorHandle.ptr += m_CurrentBackBufferIndex * pBackBufferRTVDescHeap->GetDescriptorTypeSize();
 	auto depthBufferDSVHandle = m_pDSVDescriptorHeap->GetCPUStartHandle();
 
-	HR(pCommandAllocator->Reset());
-	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
-
-	PIXBeginEvent(DXCore::GetCommandList().Get(), 200, "Render Loop");
+	PIXBeginEvent(DXCore::GetCommandList().Get(), 200, "Renderer::Begin");
 
 	//Clear current back buffer & depth buffer:
 	RenderCommand::TransitionResource(pBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -71,7 +66,7 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 	auto vpInverse = DirectX::XMLoadFloat4x4(&(pCamera->GetVPMatrix()));
 	DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(vpInverse);
 	vpInverse = DirectX::XMMatrixInverse(&det, vpInverse);
-	vpInverse = DirectX::XMMatrixTranspose(vpInverse); //Is this needed?
+	vpInverse = DirectX::XMMatrixTranspose(vpInverse);
 	DirectX::XMStoreFloat4x4(&vpInverseCBuffer.InverseVPMatrix, vpInverse);
 	STDCALL(pCommandList->SetGraphicsRoot32BitConstants(5u, 4 * 4, &vpInverseCBuffer, 0u));
 
@@ -82,14 +77,14 @@ void Renderer::Begin(Camera* const pCamera, D3D12_GPU_VIRTUAL_ADDRESS accelerati
 
 	//Raytracing accelerationstructure.
 	STDCALL(pCommandList->SetGraphicsRootShaderResourceView(4u, accelerationStructure));
+	PIXEndEvent(DXCore::GetCommandList().Get());
 }
 
 void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::shared_ptr<VertexObject>>>& vertexObjects) noexcept
 {
+	PIXBeginEvent(DXCore::GetCommandList().Get(), 300, "Renderer::Submit");
 	static float speed = 1.0f;
-
 	auto pCommandList = DXCore::GetCommandList();
-	auto index = Window::Get().GetCurrentFrameInFlightIndex();
 	for (auto& modelInstances : vertexObjects)
 	{
 		for (auto& object : modelInstances.second)
@@ -101,7 +96,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 			for (uint32_t i{ 0u }; i < objectMeshes.size(); i++)
 			{
 				auto& cbv = object->GetTransformConstantBufferView();
-				auto gpuHandle = cbv.GpuHandles[index];
+				auto gpuHandle = cbv.GpuHandles[m_FrameIndex];
 
 				STDCALL(pCommandList->SetGraphicsRootDescriptorTable(0, gpuHandle));
 				STDCALL(pCommandList->SetGraphicsRootShaderResourceView(1u, objectMeshes[i]->GetVertexBufferGPUAddress()));
@@ -110,6 +105,7 @@ void Renderer::Submit(const std::unordered_map<std::string, std::vector<std::sha
 			}
 		}
 	}
+	PIXEndEvent(DXCore::GetCommandList().Get());
 }
 
 void Renderer::End() noexcept
@@ -119,7 +115,6 @@ void Renderer::End() noexcept
 	//Present:
 	{
 		RenderCommand::TransitionResource(pBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-		PIXEndEvent(DXCore::GetCommandList().Get());
 		HR(pCommandList->Close());
 
 		ID3D12CommandList* commandLists[] = { pCommandList.Get() };
@@ -164,7 +159,7 @@ void Renderer::WaitAndSync()
 	// If the next frame is not ready to be rendered yet, wait until it is ready.
 	if (DXCore::GetFence()->GetCompletedValue() < m_FrameFenceValues[m_FrameIndex])
 	{
-		PIXBeginEvent(400, "Sync");
+		PIXBeginEvent(400, "Renderer::Sync");
 		HR(DXCore::GetFence()->SetEventOnCompletion(m_FrameFenceValues[m_FrameIndex], DXCore::GetFenceEvent()));
 		WaitForSingleObjectEx(DXCore::GetFenceEvent(), INFINITE, FALSE);
 		PIXEndEvent();

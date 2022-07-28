@@ -51,11 +51,11 @@ void Engine::Run() noexcept
 			m_pRenderer->Submit(m_pScene->GetCulledVertexObjects());
 
 			{
-				ImGuiManager::Begin();
-
-				RenderMiscWindow(currentFramesPerSecond, currentFrameTime);
-
-				ImGuiManager::End();
+				//ImGuiManager::Begin();
+				//
+				//RenderMiscWindow(currentFramesPerSecond, currentFrameTime);
+				//
+				//ImGuiManager::End();
 			}
 			m_pRenderer->End();
 		}
@@ -84,13 +84,14 @@ void Engine::Run() noexcept
 			startProfiling = true;
 			frameCount = 0u;
 		}
-		else if (frameCount == 2'000 && startProfiling == true)
+		else if (frameCount == 500 && startProfiling == true)
 		{
 			if (ProfilerManager::IsValid())
 			{
 				auto [currentAverage, averageSinceStart] = ProfilerManager::Report();
 				m_CurrentAverageRenderTime = currentAverage;
 				m_AverageRenderTimeSinceStart = averageSinceStart;
+				m_SummedDurationOverFrames = ProfilerManager::m_SummedDurationOverFrames;
 			}
 			frameCount = 0u;
 		}
@@ -119,6 +120,7 @@ void Engine::RenderMiscWindow(uint64_t currentFramesPerSecond, float currentFram
 	ImGui::Text("Frame time: %.5f ms", currentFrameTime);
 	ImGui::Text("Render pass time (Average): %.5f ms", m_CurrentAverageRenderTime);
 	ImGui::Text("Render pass time (Total summed average): %.5f ms", m_AverageRenderTimeSinceStart);
+	ImGui::Text("Summed duration over test: %.5f ms", m_SummedDurationOverFrames);
 	ImGui::Text("Mesh Count: %d", m_pScene->GetTotalNrOfMeshes());
 	ImGui::Text("Vertex Count: %d", m_pScene->GetTotalNrOfVertices());
 	ImGui::Text("Index Count: %d", m_pScene->GetTotalNrOfIndices());

@@ -55,13 +55,13 @@ void Scene::Initialize() noexcept
 	//Create the "room"
 	//Floor
 	AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, -10.0f, 50.0f, 1.0f), DirectX::XMVectorSet((float)M_PI / 2.0f, 0.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-	//Wall behind
+	////Wall behind
 	AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, 90.0f, -50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f));
-	//Wall in front
+	////Wall in front
 	AddVertexObject("Rec", DirectX::XMVectorSet(0.0f, 90.0f, 150.0f, 1.0f), DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f));
-	//Wall to the left
+	////Wall to the left
 	AddVertexObject("Rec", DirectX::XMVectorSet(-100.0f, 90.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)-M_PI / 2.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
-	//Wall to the right
+	////Wall to the right
 	AddVertexObject("Rec", DirectX::XMVectorSet(100.0f, 90.0f, 50.0f, 1.0f), DirectX::XMVectorSet(0.0f, (float)M_PI / 2.0f, 0.0f, 0.0f), 200.0f, NONE, DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
 
 	auto pCommandAllocator = DXCore::GetCommandAllocators()[0];
@@ -88,13 +88,13 @@ void Scene::Initialize() noexcept
 
 void Scene::Update(bool rayTraceBool, float deltaTime) noexcept
 {
-	auto pCommandAllocator = DXCore::GetCommandAllocators()[Window::Get().GetCurrentFrameInFlightIndex()];
+	UINT fif = Window::Get().GetCurrentFrameInFlightIndex();
+	auto pCommandAllocator = DXCore::GetCommandAllocators()[fif];
 	auto pCommandList = DXCore::GetCommandList();
-	auto pDevice = DXCore::GetDevice();
 
 	HR(pCommandAllocator->Reset());
 	HR(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
-
+	
 	//Update all objects.
 	for (auto& modelInstances : m_Objects)
 	{
@@ -112,12 +112,6 @@ void Scene::Update(bool rayTraceBool, float deltaTime) noexcept
 		//Update the top level acceleration structure.
 		m_pRayTracingManager->UpdateInstances(m_UniqueModels, m_Objects, m_TotalMeshes);
 	}
-
-	//Make sure we exectute the commands after everything is updated.
-	HR(pCommandList->Close());
-	ID3D12CommandList* commandLists[] = { pCommandList.Get() };
-	STDCALL(DXCore::GetCommandQueue()->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists));
-	RenderCommand::Flush();
 }
 
 void Scene::AddVertexObject(const std::string path, DirectX::XMVECTOR pos, DirectX::XMVECTOR rot, float scale, UpdateType updateType, DirectX::XMFLOAT4 color)
